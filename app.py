@@ -31,6 +31,7 @@ def init_db():
             share_count INTEGER DEFAULT 1,
             paid_amount REAL DEFAULT 0,
             status TEXT DEFAULT 'Pending',
+            weekly_paid_status INTEGER DEFAULT 0, -- 0 = አልከፈለም, 1 = ከፍሏል
             member_cheque TEXT,
             guarantor_name TEXT,
             guarantor_cheque TEXT,
@@ -60,9 +61,11 @@ def send_telegram_message(chat_id, text, reply_markup=None):
     if reply_markup:
         payload["reply_markup"] = reply_markup
     try:
-        requests.post(url, json=payload, timeout=10)
+        res = requests.post(url, json=payload, timeout=10)
+        return res.json()
     except Exception as e:
         print(f"Telegram error: {e}")
+        return None
 
 @app.route('/')
 def home():
@@ -90,14 +93,16 @@ def webhook():
             sett = cursor.fetchone()
             target_amount, draw_num, draw_date, curr_week, winner = sett if sett else (2000000, 'አልወጣም', '-', 1, '-')
 
-            cursor.execute("SELECT ref_no, first_name, cycle_amount, share_count, paid_amount, status, member_cheque, guarantor_name, guarantor_cheque, collateral_item FROM equb_members WHERE telegram_id=?", (chat_id,))
+            cursor.execute("SELECT ref_no, first_name, cycle_amount, share_count, paid_amount, status, weekly_paid_status FROM equb_members WHERE telegram_id=?", (chat_id,))
             member = cursor.fetchone()
             conn.close()
 
+            # አድሚኑም ቢሆን የራሱ እቁብተኛ አካውንት ይኖረዋል
             if member:
-                ref_no, name, cycle_amt, shares, paid_amt, status, m_cheque, g_name, g_cheque, col_item = member
+                ref_no, name, cycle_amt, shares, paid_amt, status, w_paid = member
                 total_cycle = cycle_amt * shares
                 remaining = max(0, total_cycle - paid_amt)
+                paid_str = "✅ ተከፍሏል" if w_paid == 1 else "❌ አልተከፈለም"
 
                 if status == 'Pending':
                     msg = (
@@ -113,6 +118,7 @@ def webhook():
                         f"👤 <b>አባል:</b> {name} ({ref_no})\n"
                         f"👥 <b>ጠቅላላ አባላት:</b> {approved_count}\n"
                         f"📅 <b>የአሁኑ ሳምንት:</b> ሳምንት {curr_week}\n"
+                        f"📌 <b>የዚህ ሳምንት ክፍያዎት:</b> {paid_str}\n"
                         f"━━━━━━━━━━━━━━━━━━━\n"
                         f"🎲 <b>የሳምንቱ የወጣው ዕጣ ቁጥር:</b> {draw_num}\n"
                         f"🏆 <b>የዕጣው ባለቤት:</b> {winner}\n"
@@ -122,11 +128,7 @@ def webhook():
                         f"🔢 <b>የዕጣ ብዛት:</b> {shares} ዕጣ\n"
                         f"💵 <b>ጠቅላላ ክፍያዎ:</b> {total_cycle:,.2f} ብር\n"
                         f"✅ <b>እስካሁን የከፈሉት:</b> {paid_amt:,.2f} ብር\n"
-                        f"🔻 <b>ቀሪ እዳዎ:</b> {remaining:,.2f} ብር\n"
-                        f"━━━━━━━━━━━━━━━━━━━\n"
-                        f"🔒 <b>የእርስዎ የዋስትና መረጃ፦</b>\n"
-                        f"• ቼክ: {m_cheque or 'አልተመዘገበም'}\n"
-                        f"• የዋስ ስም: {g_name or 'አልተመዘገበም'}"
+                        f"🔻 <b>ቀሪ እዳዎ:</b> {remaining:,.2f} ብር"
                     )
             else:
                 msg = (
@@ -142,6 +144,7 @@ def webhook():
                 ]]
             }
 
+            # አድሚን ከሆነ የመቆጣጠሪያ ፓናሉን አብሮ ያያል
             if chat_id == str(ADMIN_ID):
                 reply_markup["inline_keyboard"].append([
                     {"text": "⚙️ የአድሚን መቆጣጠሪያ ፓናል", "web_app": {"url": f"{WEB_APP_URL}/admin"}}
@@ -180,6 +183,61 @@ def approve_member(member_id):
 
     return jsonify({"status": "success"})
 
+@app.route('/api/admin/toggle_payment/<int:member_id>', methods=['POST'])
+def toggle_payment(member_id):
+    data = request.json
+    status = data.get('weekly_paid_status', 0)
+    
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE equb_members SET weekly_paid_status=? WHERE id=?", (status, member_id))
+    cursor.execute("SELECT telegram_id, first_name, cycle_amount, share_count FROM equb_members WHERE id=?", (member_id,))
+    row = cursor.fetchone()
+    conn.commit()
+    conn.close()
+
+    if row and row[0]:
+        msg_type = "✅ <b>የዚህ ሳምንት ዕቁብ ክፍያዎ ተመዝግቧል!</b> አመሰግናለሁ።" if status == 1 else "⚠️ <b>የዚህ ሳምንት ክፍያዎ አልተከፈለም ተብሎ ተስተካክሏል።</b>"
+        send_telegram_message(row[0], f"👋 ሰላም {row[1]},\n\n{msg_type}")
+
+    return jsonify({"status": "success"})
+
+@app.route('/api/admin/send_direct_msg', methods=['POST'])
+def send_direct_msg():
+    data = request.json
+    telegram_id = data.get('telegram_id')
+    message = data.get('message')
+
+    if not telegram_id or not message:
+        return jsonify({"status": "error", "message": "መረጃው አልተሟላም"}), 400
+
+    send_telegram_message(telegram_id, f"📩 <b>ከአድሚን የተላከ መልእክት፦</b>\n\n{message}")
+    return jsonify({"status": "success"})
+
+@app.route('/api/admin/notify_unpaid', methods=['POST'])
+def notify_unpaid():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT current_week FROM equb_settings WHERE id=1")
+    curr_week = cursor.fetchone()[0]
+
+    cursor.execute("SELECT telegram_id, first_name, cycle_amount, share_count FROM equb_members WHERE status='Approved' AND weekly_paid_status=0 AND telegram_id != ''")
+    unpaid_members = cursor.fetchall()
+    conn.close()
+
+    count = 0
+    for m in unpaid_members:
+        msg = (
+            f"⚠️ <b>ማሳሰቢያ፦ የሳምንት {curr_week} የዕቁብ ክፍያ!</b>\n\n"
+            f"ሰላም <b>{m[1]}</b>፣\n"
+            f"የዚህ ሳምንት (ሳምንት {curr_week}) የዕቁብ ክፍያዎ እስካሁን አልተመዘገበም። እባክዎን በወቅቱ ክፍያውን በመፈጸም ዕቁብዎን ያጽኑ።\n\n"
+            f"💰 ክፍያ መጠን፦ <b>{m[2] * m[3]:,.2f} ብር</b>"
+        )
+        send_telegram_message(m[0], msg)
+        count += 1
+
+    return jsonify({"status": "success", "notified_count": count})
+
 @app.route('/api/admin/update_draw', methods=['POST'])
 def update_draw():
     data = request.json
@@ -199,18 +257,35 @@ def update_draw():
     conn.commit()
 
     if broadcast:
-        cursor.execute("SELECT telegram_id FROM equb_members WHERE status='Approved' AND telegram_id != ''")
-        users = cursor.fetchall()
+        cursor.execute("SELECT first_name, weekly_paid_status FROM equb_members WHERE status='Approved'")
+        all_members = cursor.fetchall()
+        
+        paid_list = []
+        unpaid_list = []
+        for name, paid in all_members:
+            if paid == 1:
+                paid_list.append(f"• {name} ✅")
+            else:
+                unpaid_list.append(f"• {name} ❌")
+
+        paid_text = "\n".join(paid_list) if paid_list else "የለም"
+        unpaid_text = "\n".join(unpaid_list) if unpaid_list else "የለም"
+
         announcement = (
-            f"📣 <b>የ KOKETI ዕቁብ ሳምንታዊ ማስታወቂያ!</b>\n"
+            f"📣 <b>የ KOKETI ዕቁብ ሳምንት {week} ሙሉ መረጃ!</b>\n"
             f"━━━━━━━━━━━━━━━━━━━\n"
-            f"📅 <b>ሳምንት:</b> {week}\n"
             f"🎲 <b>የወጣው ዕጣ ቁጥር:</b> <code>{draw_num}</code>\n"
             f"🏆 <b>የዕጣው ባለቤት:</b> <b>{winner}</b>\n"
             f"📆 <b>የወጣበት ቀን:</b> {draw_date}\n"
             f"━━━━━━━━━━━━━━━━━━━\n"
+            f"✅ <b>የከፈሉ አባላት፦</b>\n{paid_text}\n\n"
+            f"❌ <b>ያልከፈሉ (የቀሩ) አባላት፦</b>\n{unpaid_text}\n"
+            f"━━━━━━━━━━━━━━━━━━━\n"
             f"👏 ለባለዕጣው እንኳን ደስ አለዎት! ቀጣዩን ዝርዝር በ /start ማየት ይችላሉ።"
         )
+
+        cursor.execute("SELECT telegram_id FROM equb_members WHERE status='Approved' AND telegram_id != ''")
+        users = cursor.fetchall()
         for u in users:
             send_telegram_message(u[0], announcement)
 
