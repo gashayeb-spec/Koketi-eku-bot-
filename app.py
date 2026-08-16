@@ -30,12 +30,12 @@ def init_db():
             cycle_amount REAL,
             share_count INTEGER DEFAULT 1,
             paid_amount REAL DEFAULT 0,
-            status TEXT DEFAULT 'Pending',
-            weekly_paid_status INTEGER DEFAULT 0, -- 0 = አልከፈለም, 1 = ከፍሏል
-            member_cheque TEXT,
-            guarantor_name TEXT,
-            guarantor_cheque TEXT,
-            collateral_item TEXT,
+            status TEXT DEFAULT 'Pending', -- Pending, Approved, Blocked, Cancelled
+            weekly_paid_status INTEGER DEFAULT 0,
+            member_cheque TEXT DEFAULT '-',
+            guarantor_name TEXT DEFAULT '-',
+            guarantor_cheque TEXT DEFAULT '-',
+            collateral_item TEXT DEFAULT '-',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -97,7 +97,6 @@ def webhook():
             member = cursor.fetchone()
             conn.close()
 
-            # አድሚኑም ቢሆን የራሱ እቁብተኛ አካውንት ይኖረዋል
             if member:
                 ref_no, name, cycle_amt, shares, paid_amt, status, w_paid = member
                 total_cycle = cycle_amt * shares
@@ -111,6 +110,10 @@ def webhook():
                         f"⏳ <b>የምዝገባ ሁኔታ:</b> <code>በአድሚን በመረጋገጥ ላይ (Pending)</code>\n\n"
                         f"<i>መረጃዎ ተረጋግጦ ሲጸድቅ ዲጂታል የዕቁብ ደብተርዎ ይከፈታል።</i>"
                     )
+                elif status == 'Blocked':
+                    msg = f"⛔ <b>ሰላም {name}፣</b>\n\nየአባልነት አካውንትዎ በአድሚን <b>ታግዷል (Blocked)</b>። እባክዎን አድሚኑን ያነጋግሩ።"
+                elif status == 'Cancelled':
+                    msg = f"🚫 <b>ሰላም {name}፣</b>\n\nየዕቁብ ምዝገባዎ <b>ተሰርዟል (Cancelled)</b>።"
                 else:
                     msg = (
                         f"📖 <b>የ KOKETI ዕቁብ ደብተር (Passbook)</b>\n"
@@ -144,7 +147,6 @@ def webhook():
                 ]]
             }
 
-            # አድሚን ከሆነ የመቆጣጠሪያ ፓናሉን አብሮ ያያል
             if chat_id == str(ADMIN_ID):
                 reply_markup["inline_keyboard"].append([
                     {"text": "⚙️ የአድሚን መቆጣጠሪያ ፓናል", "web_app": {"url": f"{WEB_APP_URL}/admin"}}
@@ -168,18 +170,48 @@ def get_admin_members():
     
     return jsonify({"members": members, "settings": settings})
 
-@app.route('/api/admin/approve/<int:member_id>', methods=['POST'])
-def approve_member(member_id):
+# የአባል ሁኔታ መለወጫ (Approve, Block, Cancel)
+@app.route('/api/admin/change_status/<int:member_id>', methods=['POST'])
+def change_status(member_id):
+    data = request.json
+    new_status = data.get('status') # Approved, Blocked, Cancelled, Pending
+    
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("UPDATE equb_members SET status='Approved' WHERE id=?", (member_id,))
+    cursor.execute("UPDATE equb_members SET status=? WHERE id=?", (new_status, member_id))
     cursor.execute("SELECT telegram_id, first_name, ref_no FROM equb_members WHERE id=?", (member_id,))
     row = cursor.fetchone()
     conn.commit()
     conn.close()
 
     if row and row[0]:
-        send_telegram_message(row[0], f"🎉 <b>እንኳን ደስ አለዎት {row[1]}!</b>\n\nየመዝገብ ቁጥርዎ <b>{row[2]}</b> ተረጋግጧል። አሁን /start በማለት የዕቁብ ደብተርዎን ማየት ይችላሉ።")
+        if new_status == 'Approved':
+            send_telegram_message(row[0], f"🎉 <b>እንኳን ደስ አለዎት {row[1]}!</b>\n\nየመዝገብ ቁጥርዎ <b>{row[2]}</b> ተረጋግጦ ጸድቋል። አሁን /start በማለት የዕቁብ ደብተርዎን ማየት ይችላሉ።")
+        elif new_status == 'Blocked':
+            send_telegram_message(row[0], f"⛔ <b>ሰላም {row[1]}፣</b>\n\nየአባልነት አካውንትዎ በአድሚን ታግዷል (Blocked)።")
+        elif new_status == 'Cancelled':
+            send_telegram_message(row[0], f"🚫 <b>ሰላም {row[1]}፣</b>\n\nየዕቁብ ምዝገባዎ ተሰርዟል (Cancelled)።")
+
+    return jsonify({"status": "success"})
+
+# አድሚን የዋስትናና የቼክ መረጃ መመዝገቢያ API
+@app.route('/api/admin/update_guarantor/<int:member_id>', methods=['POST'])
+def update_guarantor(member_id):
+    data = request.json
+    member_cheque = data.get('member_cheque', '-')
+    guarantor_name = data.get('guarantor_name', '-')
+    guarantor_cheque = data.get('guarantor_cheque', '-')
+    collateral_item = data.get('collateral_item', '-')
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        UPDATE equb_members 
+        SET member_cheque=?, guarantor_name=?, guarantor_cheque=?, collateral_item=? 
+        WHERE id=?
+    ''', (member_cheque, guarantor_name, guarantor_cheque, collateral_item, member_id))
+    conn.commit()
+    conn.close()
 
     return jsonify({"status": "success"})
 
@@ -191,7 +223,7 @@ def toggle_payment(member_id):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("UPDATE equb_members SET weekly_paid_status=? WHERE id=?", (status, member_id))
-    cursor.execute("SELECT telegram_id, first_name, cycle_amount, share_count FROM equb_members WHERE id=?", (member_id,))
+    cursor.execute("SELECT telegram_id, first_name FROM equb_members WHERE id=?", (member_id,))
     row = cursor.fetchone()
     conn.commit()
     conn.close()
@@ -260,13 +292,8 @@ def update_draw():
         cursor.execute("SELECT first_name, weekly_paid_status FROM equb_members WHERE status='Approved'")
         all_members = cursor.fetchall()
         
-        paid_list = []
-        unpaid_list = []
-        for name, paid in all_members:
-            if paid == 1:
-                paid_list.append(f"• {name} ✅")
-            else:
-                unpaid_list.append(f"• {name} ❌")
+        paid_list = [f"• {name} ✅" for name, paid in all_members if paid == 1]
+        unpaid_list = [f"• {name} ❌" for name, paid in all_members if paid == 0]
 
         paid_text = "\n".join(paid_list) if paid_list else "የለም"
         unpaid_text = "\n".join(unpaid_list) if unpaid_list else "የለም"
@@ -281,7 +308,7 @@ def update_draw():
             f"✅ <b>የከፈሉ አባላት፦</b>\n{paid_text}\n\n"
             f"❌ <b>ያልከፈሉ (የቀሩ) አባላት፦</b>\n{unpaid_text}\n"
             f"━━━━━━━━━━━━━━━━━━━\n"
-            f"👏 ለባለዕጣው እንኳን ደስ አለዎት! ቀጣዩን ዝርዝር በ /start ማየት ይችላሉ።"
+            f"👏 ለባለዕጣው እንኳን ደስ አለዎት!"
         )
 
         cursor.execute("SELECT telegram_id FROM equb_members WHERE status='Approved' AND telegram_id != ''")
@@ -302,35 +329,18 @@ def register_equb():
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
-        ref_no = data.get('ref_no')
-        telegram_id = str(data.get('telegram_id', ''))
-        first_name = data.get('first_name')
-        father_name = data.get('father_name')
-        grand_name = data.get('grand_name')
-        phone_number = data.get('phone_number')
-        gps_location = data.get('gps_location', '')
-        region = data.get('region_select', '')
-        payment_method = data.get('payment_method', '')
-        cycle_amount = float(data.get('cycle_amount', 0))
-        share_count = int(data.get('share_count', 1))
-        paid_amount = float(data.get('paid_amount', 0))
-        member_cheque = data.get('member_cheque', '')
-        guarantor_name = data.get('guarantor_name', '')
-        guarantor_cheque = data.get('guarantor_cheque', '')
-        collateral_item = data.get('collateral_item', '')
-
         cursor.execute('''
             INSERT INTO equb_members (
                 ref_no, telegram_id, first_name, father_name, grand_name,
                 phone_number, gps_location, region, payment_method, cycle_amount,
-                share_count, paid_amount, member_cheque, guarantor_name,
-                guarantor_cheque, collateral_item, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')
+                share_count, paid_amount, status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')
         ''', (
-            ref_no, telegram_id, first_name, father_name, grand_name,
-            phone_number, gps_location, region, payment_method, cycle_amount,
-            share_count, paid_amount, member_cheque, guarantor_name,
-            guarantor_cheque, collateral_item
+            data.get('ref_no'), str(data.get('telegram_id', '')), data.get('first_name'),
+            data.get('father_name'), data.get('grand_name'), data.get('phone_number'),
+            data.get('gps_location', ''), data.get('region_select', ''),
+            data.get('payment_method', ''), float(data.get('cycle_amount', 0)),
+            int(data.get('share_count', 1)), float(data.get('paid_amount', 0))
         ))
         
         conn.commit()
@@ -338,11 +348,11 @@ def register_equb():
 
         msg_admin = (
             f"🔔 <b>አዲስ አባል ተመዝግቧል!</b>\n\n"
-            f"🆔 <b>Ref:</b> {ref_no}\n"
-            f"👤 <b>ስም:</b> {first_name} {father_name}\n"
-            f"📞 <b>ስልክ:</b> {phone_number}\n"
-            f"🔢 <b>የዕጣ ብዛት:</b> {share_count}\n"
-            f"💵 <b>ዙር:</b> {cycle_amount:,.2f} ብር"
+            f"🆔 <b>Ref:</b> {data.get('ref_no')}\n"
+            f"👤 <b>ስም:</b> {data.get('first_name')} {data.get('father_name')}\n"
+            f"📞 <b>ስልክ:</b> {data.get('phone_number')}\n"
+            f"🔢 <b>የዕጣ ብዛት:</b> {data.get('share_count')}\n"
+            f"💵 <b>ዙር:</b> {float(data.get('cycle_amount', 0)):,.2f} ብር"
         )
         send_telegram_message(ADMIN_ID, msg_admin)
 
