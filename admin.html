@@ -20,7 +20,7 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background: var(--bg-gradient); color: var(--text-light); min-height: 100vh; padding: 15px; }
-        .container { max-width: 1200px; margin: 0 auto; }
+        .container { max-width: 1300px; margin: 0 auto; }
         
         /* Log In Overlay */
         #loginOverlay {
@@ -47,6 +47,7 @@
         .btn-danger { background: var(--danger); color: white; }
         .btn-success { background: var(--success); color: white; }
         .btn-secondary { background: #475569; color: white; }
+        .btn-info { background: #0284c7; color: white; }
 
         /* Dashboard Header */
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid var(--border); }
@@ -65,8 +66,8 @@
 
         /* Table */
         .table-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
-        th, td { padding: 12px 15px; border-bottom: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
+        th, td { padding: 12px 10px; border-bottom: 1px solid var(--border); text-align: center; }
         th { background: rgba(15, 23, 42, 0.8); color: var(--gold); white-space: nowrap; }
         tr:hover { background: rgba(255, 255, 255, 0.02); }
         .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; display: inline-block; }
@@ -74,8 +75,17 @@
         .badge-pending { background: rgba(245, 158, 11, 0.2); color: var(--gold); }
         .badge-blocked { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
 
-        .action-btns { display: flex; gap: 5px; }
-        .action-btns button { padding: 6px 10px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.8rem; }
+        .action-btns { display: flex; gap: 4px; justify-content: center; }
+        .action-btns button { padding: 6px 8px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.8rem; }
+
+        /* Receipts Link Style */
+        .receipt-btn {
+            display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px;
+            background: rgba(245, 158, 11, 0.15); border: 1px solid var(--gold);
+            color: var(--gold); border-radius: 6px; text-decoration: none; font-size: 0.75rem; font-weight: bold;
+            transition: 0.3s;
+        }
+        .receipt-btn:hover { background: var(--gold); color: #0f172a; }
 
         /* Modals */
         .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display:none; justify-content:center; align-items:center; z-index:1100; }
@@ -209,6 +219,8 @@
                         <th>ስልክ</th>
                         <th>ዕጣ/ዙር</th>
                         <th>ተከፈለ</th>
+                        <th>የመጀመሪያ ደረሰኝ</th>
+                        <th>የሳምንቱ ደረሰኝ</th>
                         <th>ሁኔታ</th>
                         <th>የሳምንቱ ክፍያ</th>
                         <th>ዋስትና/ቼክ</th>
@@ -371,6 +383,10 @@
                     if (m.status === 'Approved') badgeClass = 'badge-approved';
                     if (m.status === 'Blocked' || m.status === 'Cancelled') badgeClass = 'badge-blocked';
 
+                    // Receipt Links
+                    const initialReceiptLink = m.receipt_url ? `<a href="${m.receipt_url}" target="_blank" class="receipt-btn"><i class="fas fa-image"></i> እይ</a>` : `<span style="color:var(--text-muted); font-size:0.75rem;">የለም</span>`;
+                    const weeklyReceiptLink = m.weekly_receipt_url ? `<a href="${m.weekly_receipt_url}" target="_blank" class="receipt-btn"><i class="fas fa-receipt"></i> እይ</a>` : `<span style="color:var(--text-muted); font-size:0.75rem;">❌ አልተላከም</span>`;
+
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td><b>${m.ref_no}</b></td>
@@ -378,6 +394,8 @@
                         <td>${m.phone_number}</td>
                         <td>${m.share_count} ዕጣ (${(m.cycle_amount * m.share_count).toLocaleString()} ብር)</td>
                         <td>${m.paid_amount.toLocaleString()} ብር</td>
+                        <td>${initialReceiptLink}</td>
+                        <td>${weeklyReceiptLink}</td>
                         <td><span class="badge ${badgeClass}">${m.status}</span></td>
                         <td>
                             <button class="btn ${m.weekly_paid_status === 1 ? 'btn-success' : 'btn-danger'}" style="padding: 4px 8px; font-size: 0.75rem;" onclick="togglePayment(${m.id}, ${m.weekly_paid_status === 1 ? 0 : 1})">
