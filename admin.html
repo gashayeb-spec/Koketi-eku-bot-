@@ -16,7 +16,6 @@
             --text-muted: #94a3b8;
             --danger: #ef4444;
             --success: #10b981;
-            --warning: #f97316;
             --border: rgba(255, 255, 255, 0.1);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -36,7 +35,7 @@
         .login-card h2 { color: var(--gold); margin-bottom: 20px; font-size: 1.5rem; }
         .input-group { margin-bottom: 15px; text-align: left; }
         .input-group label { display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9rem; }
-        .input-group input, .input-group select, .input-group textarea {
+        .input-group input, .input-group select {
             width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border);
             background: rgba(15, 23, 42, 0.6); color: var(--text-light); outline: none;
         }
@@ -46,16 +45,16 @@
         }
         .btn:hover { background: var(--gold-hover); }
         .btn-danger { background: var(--danger); color: white; }
-        .btn-warning { background: var(--warning); color: white; }
         .btn-success { background: var(--success); color: white; }
         .btn-secondary { background: #475569; color: white; }
+        .btn-info { background: #0284c7; color: white; }
 
         /* Dashboard Header */
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid var(--border); }
         header h1 { font-size: 1.5rem; color: var(--gold); }
 
         /* Stats Cards */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
         .stat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 15px; text-align: center; }
         .stat-card i { font-size: 1.8rem; color: var(--gold); margin-bottom: 8px; }
         .stat-card .value { font-size: 1.4rem; font-weight: bold; margin: 5px 0; }
@@ -63,7 +62,7 @@
 
         /* Control Panel Settings */
         .settings-panel { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 25px; }
-        .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; }
+        .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
 
         /* Table */
         .table-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; }
@@ -79,6 +78,7 @@
         .action-btns { display: flex; gap: 4px; justify-content: center; }
         .action-btns button { padding: 6px 8px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.8rem; }
 
+        /* Receipts Link Style */
         .receipt-btn {
             display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px;
             background: rgba(245, 158, 11, 0.15); border: 1px solid var(--gold);
@@ -103,20 +103,43 @@
     <div id="loginOverlay">
         <div class="login-card">
             <i class="fas fa-lock-open-alt" style="font-size: 3rem; color: var(--gold); margin-bottom: 15px;"></i>
-            <h2>KOKETI Admin Log In</h2>
+            <h2>KOKETI Admin Log In / የአድሚን መግቢያ</h2>
             <div class="input-group">
-                <label>የአድሚን ይለፍ ቃል (Password)</label>
-                <input type="password" id="adminPasswordInput" placeholder="የይለፍ ቃል ያስገቡ">
+                <label>የአድሚን ይለፍ ቃል (Admin Password)</label>
+                <input type="password" id="adminPasswordInput" placeholder="የይለፍ ቃል ያስገቡ / Enter Password">
             </div>
-            <button class="btn" onclick="submitLogin()">Log In</button>
+            <button class="btn" onclick="submitLogin()">Log In / ግባ</button>
             <p id="loginError" style="color: var(--danger); margin-top: 10px; font-size: 0.85rem; display:none;"></p>
+            <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px;">
+                <button class="btn btn-secondary" style="font-size: 0.8rem;" onclick="showResetPasswordModal()">የይለፍ ቃል ረስተዋል? (Reset Password)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Reset Modal -->
+    <div id="resetPasswordModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: var(--gold); margin-bottom: 15px;">የአድሚን ይለፍ ቃል መቀየሪያ / Reset Password</h3>
+            <div class="input-group">
+                <button class="btn btn-secondary" onclick="requestOTP()">1. OTP ኮድ ወደ ቴሌግራም ላክ / Send OTP</button>
+            </div>
+            <div class="input-group">
+                <label>የመጣው OTP ኮድ / Received OTP</label>
+                <input type="text" id="otpInput" placeholder="6 አሃዝ ኮድ / 6-digit code">
+            </div>
+            <div class="input-group">
+                <label>አዲስ ይለፍ ቃል / New Strong Password</label>
+                <input type="password" id="newPasswordInput" placeholder="ቢያንስ 8 አሃዝ፣ ትልቅ/ትንሽ ፊደል፣ ቁጥርና ልዩ ምልክት">
+            </div>
+            <button class="btn" onclick="submitResetPassword()">የይለፍ ቃል ቀይር / Change Password</button>
+            <button class="btn btn-danger" style="margin-top: 8px;" onclick="closeResetPasswordModal()">ዝጋ / Close</button>
         </div>
     </div>
 
     <div class="container">
         <header>
-            <h1><i class="fas fa-user-shield"></i> KOKETI KURT & LOUNGE - Admin</h1>
-            <button class="btn btn-danger" style="width: auto; padding: 8px 15px;" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Log Out</button>
+            <h1><i class="fas fa-user-shield"></i> KOKETI KURT & LOUNGE - Admin Panel</h1>
+            <button class="btn btn-danger" style="width: auto; padding: 8px 15px;" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Log Out / ውጣ</button>
         </header>
 
         <!-- Stats Grid -->
@@ -124,72 +147,53 @@
             <div class="stat-card">
                 <i class="fas fa-users"></i>
                 <div class="value" id="statTotalReg">0</div>
-                <div class="label">ጠቅላላ የተመዘገቡ</div>
+                <div class="label">ጠቅላላ የተመዘገቡ / Total Registered</div>
             </div>
             <div class="stat-card">
                 <i class="fas fa-user-check"></i>
                 <div class="value" id="statTotalApproved">0</div>
-                <div class="label">የጸደቁ አባላት</div>
+                <div class="label">የጸደቁ አባላት / Approved Members</div>
             </div>
             <div class="stat-card">
-                <i class="fas fa-user-clock" style="color: var(--warning);"></i>
-                <div class="value" id="statTotalPending" style="color: var(--warning);">0</div>
-                <div class="label">በመጠባበቅ ላይ (Pending)</div>
-            </div>
-            <div class="stat-card">
-                <i class="fas fa-times-circle" style="color: var(--danger);"></i>
-                <div class="value" id="statTotalUnpaid" style="color: var(--danger);">0</div>
-                <div class="label">ያልከፈሉ (ያጉላሉ)</div>
+                <i class="fas fa-clock"></i>
+                <div class="value" id="statTotalPending">0</div>
+                <div class="label">በመጠባበቅ ላይ / Pending</div>
             </div>
             <div class="stat-card">
                 <i class="fas fa-wallet"></i>
                 <div class="value" id="statTotalPaid">0.00 ብር</div>
-                <div class="label">ጠቅላላ የተሰበሰበ</div>
-            </div>
-        </div>
-
-        <!-- Announcement & Broadcast Center -->
-        <div class="settings-panel" style="border-color: var(--gold);">
-            <h3 style="color: var(--gold); margin-bottom: 15px;"><i class="fas fa-bullhorn"></i> የቴሌግራም ማስታወቂያና ማስጠንቀቂያ መላኪያ</h3>
-            <div class="input-group">
-                <label>የማስታወቂያ ወይም ማስጠንቀቂያ መልእክት</label>
-                <textarea id="announcementText" rows="3" placeholder="ለአባላት የሚተላለፈውን መልእክት እዚህ ይጻፉ..."></textarea>
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                <button class="btn btn-success" onclick="sendBroadcast('all')"><i class="fas fa-paper-plane"></i> ለሁሉም አባላት ማስታወቂያ ላክ</button>
-                <button class="btn btn-warning" onclick="sendBroadcast('pending')"><i class="fas fa-user-clock"></i> በ'Pending' ላይ ያሉትን አሳስብ</button>
-                <button class="btn btn-danger" onclick="sendBroadcast('unpaid')"><i class="fas fa-exclamation-triangle"></i> ላልከፈሉ ማስጠንቀቂያ ላክ</button>
+                <div class="label">ጠቅላላ የተሰበሰበ ክፍያ / Total Paid</div>
             </div>
         </div>
 
         <!-- System Controls -->
         <div class="settings-panel">
-            <h3 style="color: var(--gold); margin-bottom: 15px;"><i class="fas fa-sliders-h"></i> የዕቁብ መቆጣጠሪያ ፓናል</h3>
+            <h3 style="color: var(--gold); margin-bottom: 15px;"><i class="fas fa-sliders-h"></i> የዕቁብ መቆጣጠሪያ ፓናል / Control Panel</h3>
             <div class="settings-grid">
                 <div class="input-group">
-                    <label>የሳምንቱ ዕጣ ቁጥር</label>
+                    <label>የሳምንቱ ዕጣ ቁጥር / Draw Number</label>
                     <input type="text" id="drawNumberInput" placeholder="ምሳሌ፦ 45">
                 </div>
                 <div class="input-group">
-                    <label>የዕጣው ባለቤት ስም</label>
+                    <label>የዕጣው ባለቤት ስም / Winner Name</label>
                     <input type="text" id="winnerNameInput" placeholder="የአሸናፊው ስም">
                 </div>
                 <div class="input-group">
-                    <label>የዕጣ ማውጫ ቀን</label>
+                    <label>የዕጣ ማውጫ ቀን / Draw Date</label>
                     <input type="text" id="drawDateInput" placeholder="YYYY-MM-DD">
                 </div>
                 <div class="input-group">
-                    <label>የአሁኑ ሳምንት</label>
+                    <label>የአሁኑ ሳምንት / Current Week</label>
                     <input type="number" id="currentWeekInput" value="1">
                 </div>
             </div>
-            <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <button class="btn btn-success" onclick="updateDrawSettings(true)"><i class="fas fa-bullhorn"></i> ዕጣ መዝግብና ለሁሉም አባላት በቴሌግራም አብስር</button>
-                <button class="btn btn-secondary" onclick="updateDrawSettings(false)"><i class="fas fa-save"></i> ዕጣ ብቻ መዝግብ</button>
+            <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+                <button class="btn btn-success" style="flex: 1;" onclick="updateDrawSettings(true)"><i class="fas fa-bullhorn"></i> ዕጣ መዝግብና ለሁሉም አባላት በቴሌግራም አብስር / Save & Broadcast</button>
+                <button class="btn btn-secondary" style="flex: 1;" onclick="updateDrawSettings(false)"><i class="fas fa-save"></i> ዕጣ ብቻ መዝግብ / Save Draw Only</button>
             </div>
             <div style="margin-top: 15px; border-top: 1px solid var(--border); padding-top: 15px;" class="settings-grid">
                 <div class="input-group">
-                    <label>የተፈቀደ ከፍተኛ የአባላት ብዛት</label>
+                    <label>የተፈቀደ ከፍተኛ የአባላት ብዛት / Max Members Limit</label>
                     <input type="number" id="maxMembersInput" value="100">
                 </div>
                 <div class="input-group">
@@ -200,25 +204,26 @@
                     </select>
                 </div>
             </div>
-            <button class="btn" style="margin-top: 10px;" onclick="saveRegistrationSettings()">የምዝገባ ገደብ አስተካክል</button>
+            <button class="btn" style="margin-top: 10px;" onclick="saveRegistrationSettings()">የምዝገባ ገደብ አስተካክል / Save Reg Settings</button>
+            <button class="btn btn-danger" style="margin-top: 10px;" onclick="notifyUnpaidMembers()"><i class="fas fa-bell"></i> ያልከፈሉ አባላትን በቴሌግራም አሳስብ / Remind Unpaid</button>
         </div>
 
         <!-- Members Table -->
-        <h3 style="color: var(--gold); margin-bottom: 15px;"><i class="fas fa-list"></i> የአባላት ሙሉ ዝርዝር</h3>
+        <h3 style="color: var(--gold); margin-bottom: 15px;"><i class="fas fa-list"></i> የአባላት ሙሉ ዝርዝር / Full Members List</h3>
         <div class="table-container">
             <table>
                 <thead>
                     <tr>
                         <th>Ref No</th>
-                        <th>ሙሉ ስም</th>
-                        <th>ስልክ ቁጥር</th>
-                        <th>ዕጣ/ዙር</th>
-                        <th>የተከፈለ ብር</th>
-                        <th>ደረሰኝ</th>
-                        <th>ሁኔታ</th>
-                        <th>የሳምንቱ ክፍያ</th>
-                        <th>የዋስትና ቼክ</th>
-                        <th>እርምጃዎች</th>
+                        <th>ሙሉ ስም / Full Name</th>
+                        <th>ስልክ / Phone</th>
+                        <th>ዕጣ/ዙር / Share</th>
+                        <th>ተከፈለ / Paid</th>
+                        <th>ክፍያ የተከፈለበት ደረሰኝ ወይም ስክሪን ሹት / Payment Receipt or Screenshot</th>
+                        <th>ሁኔታ / Status</th>
+                        <th>የሳምንቱ ክፍያ / Weekly Payment</th>
+                        <th>ዋስትና/ቼክ / Guarantee & Cheque</th>
+                        <th>እርምጃዎች / Actions</th>
                     </tr>
                 </thead>
                 <tbody id="membersTableBody">
@@ -228,17 +233,43 @@
         </div>
     </div>
 
+    <!-- Guarantor Modal -->
+    <div id="guarantorModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: var(--gold); margin-bottom: 15px;">የዋስትና እና ቼክ መረጃ ማስተካከያ / Guarantee Details</h3>
+            <input type="hidden" id="modalMemberId">
+            <div class="input-group">
+                <label>የአባሉ ቼክ ቁጥር / Member Cheque No</label>
+                <input type="text" id="memberChequeInput">
+            </div>
+            <div class="input-group">
+                <label>የዋስ ስም / Guarantor Name</label>
+                <input type="text" id="guarantorNameInput">
+            </div>
+            <div class="input-group">
+                <label>የዋሱ ቼክ ቁጥር / Guarantor Cheque No</label>
+                <input type="text" id="guarantorChequeInput">
+            </div>
+            <div class="input-group">
+                <label>የተያዘ በያዣ/መያዣ / Collateral Item</label>
+                <input type="text" id="collateralItemInput">
+            </div>
+            <button class="btn" onclick="saveGuarantorInfo()">መረጃውን መዝግብ / Save Info</button>
+            <button class="btn btn-danger" style="margin-top: 8px;" onclick="closeGuarantorModal()">ዝጋ / Close</button>
+        </div>
+    </div>
+
     <!-- Direct Message Modal -->
     <div id="msgModal" class="modal">
         <div class="modal-content">
-            <h3 style="color: var(--gold); margin-bottom: 15px;">ለአባሉ ቀጥታ መልእክት መላኪያ</h3>
+            <h3 style="color: var(--gold); margin-bottom: 15px;">ለአባሉ ቀጥታ መልእክት መላኪያ / Send Direct Message</h3>
             <input type="hidden" id="msgTelegramId">
             <div class="input-group">
-                <label>መልእክት</label>
-                <textarea id="directMsgInput" style="height:100px;"></textarea>
+                <label>መልእክት / Message</label>
+                <textarea id="directMsgInput" style="width:100%; height:100px; background: rgba(15, 23, 42, 0.6); color:white; border:1px solid var(--border); border-radius:8px; padding:10px;"></textarea>
             </div>
-            <button class="btn" onclick="sendDirectMsg()">መልእክቱን ላክ</button>
-            <button class="btn btn-danger" style="margin-top: 8px;" onclick="closeMsgModal()">ዝጋ</button>
+            <button class="btn" onclick="sendDirectMsg()">መልእክቱን ላክ / Send Message</button>
+            <button class="btn btn-danger" style="margin-top: 8px;" onclick="closeMsgModal()">ዝጋ / Close</button>
         </div>
     </div>
 
@@ -272,11 +303,11 @@
                     document.getElementById('loginOverlay').style.display = 'none';
                     loadAdminData();
                 } else {
-                    err.innerText = data.message || "የተሳሳተ የይለፍ ቃል!";
+                    err.innerText = data.message || "የተሳሳተ የይለፍ ቃል! / Incorrect password!";
                     err.style.display = 'block';
                 }
             } catch(e) {
-                err.innerText = "የሰርቨር ግንኙነት ችግር አጋጥሟል!";
+                err.innerText = "የሰርቨር ግንኙነት ችግር አጋጥሟል! / Server Connection Error!";
                 err.style.display = 'block';
             }
         }
@@ -284,6 +315,42 @@
         function logout() {
             sessionStorage.removeItem('adminAuth');
             window.location.reload();
+        }
+
+        function showResetPasswordModal() {
+            document.getElementById('resetPasswordModal').style.display = 'flex';
+        }
+
+        function closeResetPasswordModal() {
+            document.getElementById('resetPasswordModal').style.display = 'none';
+        }
+
+        async function requestOTP() {
+            try {
+                const res = await fetch('/api/admin/request_otp', {method: 'POST'});
+                const data = await res.json();
+                alert(data.message);
+            } catch(e) { alert("OTP መላክ አልተቻለም! / Failed to send OTP!"); }
+        }
+
+        async function submitResetPassword() {
+            const otp = document.getElementById('otpInput').value;
+            const new_password = document.getElementById('newPasswordInput').value;
+
+            try {
+                const res = await fetch('/api/admin/reset_password', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({otp, new_password})
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(data.message);
+                    closeResetPasswordModal();
+                } else {
+                    alert(data.message);
+                }
+            } catch(e) { alert("የይለፍ ቃል መቀየር አልተቻለም! / Failed to reset password!"); }
         }
 
         async function loadAdminData() {
@@ -295,11 +362,6 @@
                 document.getElementById('statTotalReg').innerText = data.stats.total_registered;
                 document.getElementById('statTotalApproved').innerText = data.stats.total_approved;
                 document.getElementById('statTotalPending').innerText = data.stats.total_pending;
-                
-                // Unpaid count calculation
-                let unpaidCount = data.members.filter(m => m.status === 'Approved' && m.weekly_paid_status === 0).length;
-                document.getElementById('statTotalUnpaid').innerText = unpaidCount;
-
                 document.getElementById('statTotalPaid').innerText = data.stats.total_paid_sum.toLocaleString() + " ብር";
 
                 // Set Settings
@@ -320,13 +382,11 @@
                     if (m.status === 'Approved') badgeClass = 'badge-approved';
                     if (m.status === 'Blocked' || m.status === 'Cancelled') badgeClass = 'badge-blocked';
 
-                    // Receipt Logic: Shows weekly receipt first if exists, otherwise initial receipt
-                    let receiptLink = `<span style="color:var(--text-muted); font-size:0.75rem;">የለም</span>`;
-                    if (m.weekly_receipt_url) {
-                        receiptLink = `<a href="${m.weekly_receipt_url}" target="_blank" class="receipt-btn"><i class="fas fa-receipt"></i> የሳምንቱ</a>`;
-                    } else if (m.receipt_url) {
-                        receiptLink = `<a href="${m.receipt_url}" target="_blank" class="receipt-btn"><i class="fas fa-image"></i> የመጀመሪያ</a>`;
-                    }
+                    // Receipt Link (የሳምንቱ ደረሰኝ ወይም የመጀመሪያው ደረሰኝ ይሳያል)
+                    const activeReceiptUrl = m.weekly_receipt_url || m.receipt_url;
+                    const paymentReceiptLink = activeReceiptUrl 
+                        ? `<a href="${activeReceiptUrl}" target="_blank" class="receipt-btn"><i class="fas fa-receipt"></i> ደረሰኝ እይ / View Receipt</a>` 
+                        : `<span style="color:var(--text-muted); font-size:0.75rem;">❌ አልተላከም / None</span>`;
 
                     const row = document.createElement('tr');
                     row.innerHTML = `
@@ -335,7 +395,7 @@
                         <td>${m.phone_number}</td>
                         <td>${m.share_count} ዕጣ (${(m.cycle_amount * m.share_count).toLocaleString()} ብር)</td>
                         <td>${m.paid_amount.toLocaleString()} ብር</td>
-                        <td>${receiptLink}</td>
+                        <td>${paymentReceiptLink}</td>
                         <td><span class="badge ${badgeClass}">${m.status}</span></td>
                         <td>
                             <button class="btn ${m.weekly_paid_status === 1 ? 'btn-success' : 'btn-danger'}" style="padding: 4px 8px; font-size: 0.75rem;" onclick="togglePayment(${m.id}, ${m.weekly_paid_status === 1 ? 0 : 1})">
@@ -358,33 +418,8 @@
             } catch(e) { console.error(e); }
         }
 
-        async function sendBroadcast(targetGroup) {
-            const message = document.getElementById('announcementText').value.trim();
-            if(!message) {
-                alert("እባክዎን መጀመሪያ ማስታወቂያ ወይም ማስጠንቀቂያ መልእክት ይጻፉ!");
-                return;
-            }
-
-            if(!confirm(`እርግጠኛ ነዎት ይህንን መልእክት ለተመረጡት አባላት (${targetGroup}) መላክ ይፈልጋሉ?`)) return;
-
-            try {
-                const res = await fetch('/api/admin/broadcast_message', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ target_group: targetGroup, message: message })
-                });
-                const data = await res.json();
-                if(res.ok) {
-                    alert(`መልእክቱ በስኬት ተልኳል! (${data.sent_count} ሰዎች ደርሷቸዋል)`);
-                    document.getElementById('announcementText').value = '';
-                } else {
-                    alert(data.message || "መላክ አልተቻለም");
-                }
-            } catch(e) { alert("የሰርቨር ግንኙነት ችግር አጋጥሟል!"); }
-        }
-
         async function changeStatus(id, status) {
-            if(!confirm("እርግጠኛ ነዎት የዚህን አባል ሁኔታ መቀየር ይፈልጋሉ?")) return;
+            if(!confirm("እርግጠኛ ነዎት የዚህን አባል ሁኔታ መቀየር ይፈልጋሉ? / Are you sure?")) return;
             await fetch(`/api/admin/change_status/${id}`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -394,7 +429,7 @@
         }
 
         async function deleteMember(id) {
-            if(!confirm("እርግጠኛ ነዎት ይህንን አባል ፈጽመው መሰረዝ ይፈልጋሉ?")) return;
+            if(!confirm("እርግጠኛ ነዎት ይህንን አባል ፈጽመው መሰረዝ ይፈልጋሉ? / Are you sure you want to delete?")) return;
             await fetch(`/api/admin/delete_member/${id}`, {method: 'DELETE'});
             loadAdminData();
         }
@@ -419,7 +454,7 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({draw_number, winner_name, draw_date, current_week, broadcast})
             });
-            if(res.ok) alert("የዕጣ መረጃው በስኬት ተመዝግቧል!");
+            if(res.ok) alert("የዕጣ መረጃው በስኬት ተመዝግቧል! / Draw details saved!");
             loadAdminData();
         }
 
@@ -432,7 +467,42 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({max_members, registration_status})
             });
-            if(res.ok) alert("የምዝገባ ገደቡ ተስተካክሏል!");
+            if(res.ok) alert("የምዝገባ ገደቡ ተስተካክሏል! / Registration limit saved!");
+            loadAdminData();
+        }
+
+        async function notifyUnpaidMembers() {
+            if(!confirm("ክፍያ ላልከፈሉ አባላት በሙሉ የቴሌግራም ማሳሰቢያ መልእክት ይላክ? / Send reminder to unpaid members?")) return;
+            const res = await fetch('/api/admin/notify_unpaid', {method: 'POST'});
+            const data = await res.json();
+            alert(`ለ ${data.notified_count} አባላት ማሳሰቢያ ተልኳል! / Reminded ${data.notified_count} members!`);
+        }
+
+        function openGuarantorModal(id, cheque, gName, gCheque, collateral) {
+            document.getElementById('modalMemberId').value = id;
+            document.getElementById('memberChequeInput').value = cheque || '-';
+            document.getElementById('guarantorNameInput').value = gName || '-';
+            document.getElementById('guarantorChequeInput').value = gCheque || '-';
+            document.getElementById('collateralItemInput').value = collateral || '-';
+            document.getElementById('guarantorModal').style.display = 'flex';
+        }
+
+        function closeGuarantorModal() { document.getElementById('guarantorModal').style.display = 'none'; }
+
+        async function saveGuarantorInfo() {
+            const id = document.getElementById('modalMemberId').value;
+            const payload = {
+                member_cheque: document.getElementById('memberChequeInput').value,
+                guarantor_name: document.getElementById('guarantorNameInput').value,
+                guarantor_cheque: document.getElementById('guarantorChequeInput').value,
+                collateral_item: document.getElementById('collateralItemInput').value
+            };
+            await fetch(`/api/admin/update_guarantor/${id}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            closeGuarantorModal();
             loadAdminData();
         }
 
@@ -452,7 +522,7 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({telegram_id, message})
             });
-            if(res.ok) alert("መልእክቱ ተልኳል!");
+            if(res.ok) alert("መልእክቱ ተልኳል! / Message Sent!");
             closeMsgModal();
         }
 
