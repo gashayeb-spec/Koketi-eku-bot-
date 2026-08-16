@@ -89,23 +89,11 @@
 
         <!-- Dashboard Tab -->
         <div id="dashboardTab" class="tab-content active">
-            
-            <!-- የተስተካከለው የዕጣ መረጃ ካርድ -->
             <div id="drawInfoCard" class="info-card" style="border-color: var(--gold);">
                 <h3 style="color: var(--gold); font-size: 1rem; margin-bottom: 10px;"><i class="fas fa-trophy"></i> የሳምንቱ የዕጣ መረጃ</h3>
-                
-                <!-- ዕጣው ያልወጣ ከሆነ የሚታይ -->
-                <div id="noDrawAlert" class="alert alert-info" style="text-align: center; margin-bottom: 0;">
-                    <i class="fas fa-clock" style="font-size: 1.2rem; margin-bottom: 5px;"></i><br>
-                    <b>የዚህ ሳምንት ዕጣ አልወጣም</b>
-                </div>
-
-                <!-- ዕጣው ሲወጣ የሚታዩ ዝርዝሮች -->
-                <div id="drawDetails" style="display: none;">
-                    <div class="book-row"><span class="label">የወጣው ዕጣ ቁጥር፦</span><span class="value" id="latestDrawNum" style="color: var(--gold); font-size: 1.1rem;">-</span></div>
-                    <div class="book-row"><span class="label">የዕጣው ባለቤት፦</span><span class="value" id="latestWinner">-</span></div>
-                    <div class="book-row"><span class="label">ቀን፦</span><span class="value" id="latestDrawDate">-</span></div>
-                </div>
+                <div class="book-row"><span class="label">የወጣው ዕጣ ቁጥር፦</span><span class="value" id="latestDrawNum">-</span></div>
+                <div class="book-row"><span class="label">የዕጣው ባለቤት፦</span><span class="value" id="latestWinner">-</span></div>
+                <div class="book-row"><span class="label">ቀን፦</span><span class="value" id="latestDrawDate">-</span></div>
             </div>
 
             <div id="myMembersContainer">
@@ -241,25 +229,11 @@
                 const res = await fetch(`/api/member_info/${telegramId}`);
                 const data = await res.json();
 
-                // Set Dynamic Draw Info (የተስተካከለው ክፍል)
+                // Set Draw Info
                 if(data.settings) {
-                    const drawNum = data.settings.latest_draw_number;
-                    const winner = data.settings.winner_name;
-                    const date = data.settings.latest_draw_date;
-
-                    // አድሚኑ ዕጣ ቁጥር ካልሞላ ወይም 'አልወጣም' ብሎ ካስገባ
-                    if (!drawNum || drawNum === 'አልወጣም' || drawNum === '-' || drawNum === '') {
-                        document.getElementById('noDrawAlert').style.display = 'block';
-                        document.getElementById('drawDetails').style.display = 'none';
-                    } else {
-                        // ዕጣ ሲወጣ መረጃውን ተካ እና አሳይ
-                        document.getElementById('noDrawAlert').style.display = 'none';
-                        document.getElementById('drawDetails').style.display = 'block';
-                        
-                        document.getElementById('latestDrawNum').innerText = drawNum;
-                        document.getElementById('latestWinner').innerText = winner || '-';
-                        document.getElementById('latestDrawDate').innerText = date || '-';
-                    }
+                    document.getElementById('latestDrawNum').innerText = data.settings.latest_draw_number || 'አልወጣም';
+                    document.getElementById('latestWinner').innerText = data.settings.winner_name || '-';
+                    document.getElementById('latestDrawDate').innerText = data.settings.latest_draw_date || '-';
 
                     if(data.settings.registration_status === 'CLOSED') {
                         document.getElementById('regBtn').disabled = true;
