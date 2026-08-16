@@ -2,22 +2,24 @@
 <html lang="am">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>KOKETI KURT & LOUNGE - የዕቁብ ገጽ</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 15px; margin: 0; }
-    .card { background-color: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; max-width: 500px; margin: 0 auto; }
-    h2 { color: #38bdf8; text-align: center; margin-top: 0; font-size: 20px; }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 15px; margin: 0; display: flex; justify-content: center; }
+    .card { background-color: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; width: 100%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+    h2 { color: #38bdf8; text-align: center; margin-top: 0; font-size: 22px; }
     p.sub { color: #94a3b8; text-align: center; font-size: 13px; margin-bottom: 20px; }
     .form-group { margin-bottom: 14px; }
     label { display: block; margin-bottom: 6px; font-size: 13px; color: #cbd5e1; font-weight: 500; }
-    input, select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #475569; background-color: #0f172a; color: #ffffff; box-sizing: border-box; font-size: 14px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .btn-gps { background-color: #0284c7; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 12px; margin-top: 4px; width: 100%; }
-    .btn-submit { background-color: #22c55e; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; margin-top: 15px; }
-    .btn-upload { background-color: #0284c7; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; margin-top: 15px; }
-    .btn-add-acc { background-color: #38bdf8; color: #0f172a; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 15px; }
+    input, select { width: 100%; padding: 11px; border-radius: 8px; border: 1px solid #475569; background-color: #0f172a; color: #ffffff; font-size: 14px; outline: none; }
+    input:focus, select:focus { border-color: #38bdf8; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+    .btn-gps { background-color: #0284c7; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 12px; margin-top: 6px; width: 100%; }
+    .btn-submit, .btn-upload { background-color: #22c55e; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; margin-top: 15px; }
+    .btn-upload { background-color: #0284c7; }
+    .btn-add-acc { background-color: #38bdf8; color: #0f172a; border: none; padding: 11px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 15px; }
     .section-title { color: #f59e0b; font-size: 14px; border-bottom: 1px solid #334155; padding-bottom: 4px; margin-top: 20px; margin-bottom: 12px; font-weight: bold; }
     
     #closedNotice { display: none; text-align: center; padding: 25px 15px; }
@@ -37,7 +39,6 @@
     <h2>🍷 KOKETI KURT & LOUNGE</h2>
     <p class="sub">የዲጂታል ዕቁብ አባላት ገጽ</p>
 
-    <!-- የህዝብ ተመዝጋቢዎች ስታቲስቲክስ -->
     <div class="stats-bar">
         👥 <b>የዕቁቡ ተመዝጋቢ አባላት ብዛት፦</b> <span id="public_count" style="color:#38bdf8; font-weight:bold;">0</span> / <span id="public_max">100</span>
     </div>
