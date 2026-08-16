@@ -92,7 +92,8 @@ def init_db():
             max_members INTEGER DEFAULT 100,
             registration_status TEXT DEFAULT 'OPEN',
             bot_status TEXT DEFAULT 'ACTIVE',
-            admin_password TEXT DEFAULT 'Koketi@2026'
+            admin_password TEXT DEFAULT 'Koketi@2026',
+            support_phone TEXT DEFAULT '+251 911 00 00 00'
         )
     ''')
     
@@ -100,8 +101,10 @@ def init_db():
     s_cols = [col[1] for col in cursor.fetchall()]
     if 'bot_status' not in s_cols:
         cursor.execute("ALTER TABLE equb_settings ADD COLUMN bot_status TEXT DEFAULT 'ACTIVE'")
+    if 'support_phone' not in s_cols:
+        cursor.execute("ALTER TABLE equb_settings ADD COLUMN support_phone TEXT DEFAULT '+251 911 00 00 00'")
 
-    cursor.execute('INSERT OR IGNORE INTO equb_settings (id, total_target_amount, max_members, registration_status, bot_status, admin_password) VALUES (1, 2000000, 100, "OPEN", "ACTIVE", "Koketi@2026")')
+    cursor.execute('INSERT OR IGNORE INTO equb_settings (id, total_target_amount, max_members, registration_status, bot_status, admin_password, support_phone) VALUES (1, 2000000, 100, "OPEN", "ACTIVE", "Koketi@2026", "+251 911 00 00 00")')
     
     # 3. Payment Transactions Ledger Table
     cursor.execute('''
@@ -334,7 +337,7 @@ def webhook():
 
         cursor.execute("SELECT COUNT(*) as count FROM equb_members WHERE status='Approved'")
         approved_count = cursor.fetchone()['count']
-        cursor.execute("SELECT current_week, latest_draw_number, latest_draw_date, winner_name FROM equb_settings WHERE id=1")
+        cursor.execute("SELECT current_week, latest_draw_number, latest_draw_date, winner_name, support_phone FROM equb_settings WHERE id=1")
         sett = cursor.fetchone()
 
         cursor.execute("SELECT * FROM equb_members WHERE telegram_id=?", (chat_id,))
@@ -371,7 +374,8 @@ def webhook():
             send_telegram_message(chat_id, "📲 እባክዎን ከታች ያለውን አዝራር በመጫን የክፍያ ስክሪንሹት ወይም የትራንዛክሽን ቁጥር ያስገቡ፦", inline_key)
 
         elif text == "📞 ድጋፍ / አድሚን":
-            msg = "📞 <b>KOKETI KURT & LOUNGE ድጋፍ መስመር፦</b>\n\n📱 <b>ስልክ:</b> +251 911 00 00 00\n💬 <b>ቴሌግራም አድሚን:</b> @KoketiAdmin\n📍 <b>አድራሻ:</b> ሀዋሳ፣ ኢትዮጵያ"
+            s_phone = sett['support_phone'] if sett and sett['support_phone'] else '+251 911 00 00 00'
+            msg = f"📞 <b>KOKETI KURT & LOUNGE ድጋፍ መስመር፦</b>\n\n📱 <b>ስልክ:</b> {s_phone}\n💬 <b>ቴሌግራም አድሚን:</b> @KoketiAdmin\n📍 <b>አድሻ:</b> ሀዋሳ፣ ኢትዮጵያ"
             send_telegram_message(chat_id, msg, p_key)
 
         elif text == "⚙️ የአድሚን መቆጣጠሪያ ፓናል" and is_admin:
@@ -387,7 +391,7 @@ def get_member_info(telegram_id):
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM equb_members WHERE telegram_id=? ORDER BY id DESC", (telegram_id,))
     members = [dict(r) for r in cursor.fetchall()]
-    cursor.execute("SELECT registration_status, max_members, current_week, latest_draw_number, latest_draw_date, winner_name, bot_status FROM equb_settings WHERE id=1")
+    cursor.execute("SELECT registration_status, max_members, current_week, latest_draw_number, latest_draw_date, winner_name, bot_status, support_phone FROM equb_settings WHERE id=1")
     settings = dict(cursor.fetchone())
     cursor.execute("SELECT COUNT(*) as count FROM equb_members WHERE status='Approved'")
     total_approved = cursor.fetchone()['count']
@@ -609,9 +613,10 @@ def update_registration_settings():
     data = request.json
     max_m = data.get('max_members', 100)
     reg_s = data.get('registration_status', 'OPEN')
+    support_phone = data.get('support_phone', '+251 911 00 00 00')
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("UPDATE equb_settings SET max_members=?, registration_status=? WHERE id=1", (max_m, reg_s))
+    cursor.execute("UPDATE equb_settings SET max_members=?, registration_status=?, support_phone=? WHERE id=1", (max_m, reg_s, support_phone))
     conn.commit()
     conn.close()
     return jsonify({"status": "success"})
