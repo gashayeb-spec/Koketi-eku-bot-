@@ -113,6 +113,9 @@
         .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display:none; justify-content:center; align-items:center; z-index:1100; }
         .modal-content { background: #1e293b; border-radius: 12px; padding: 25px; width: 90%; max-width: 500px; border: 1px solid var(--gold); max-height: 90vh; overflow-y: auto; }
 
+        /* Image Modal Layer Fix */
+        #imageViewerModal { z-index: 2000; }
+
         @media(max-width: 768px) {
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
             header h1 { font-size: 1.2rem; }
@@ -262,7 +265,6 @@
                         <option value="CLOSED" data-am="ተዘግቷል (CLOSED)" data-en="Closed (CLOSED)">ተዘግቷል (CLOSED)</option>
                     </select>
                 </div>
-                <!-- ➕ የተጨመረ፦ የከስተመር ሰፖርት ስልክ ቁጥር ማስገቢያ -->
                 <div class="input-group">
                     <label data-am="የደንበኞች ድጋፍ ስልክ ቁጥር (Customer Support)" data-en="Customer Support Phone">የደንበኞች ድጋፍ ስልክ ቁጥር (Customer Support)</label>
                     <input type="text" id="supportPhoneInput" placeholder="ምሳሌ፦ 0911223344" data-am-ph="ምሳሌ፦ 0911223344" data-en-ph="e.g. 0911223344">
@@ -438,16 +440,12 @@
         }
 
         function filterMembers() {
-            const input = document.getElementById('memberSearchInput').value.toUpperCase();
+            const input = document.getElementById('memberSearchInput').value.toLowerCase().trim();
             const trs = document.querySelectorAll('#membersTableBody tr');
 
             trs.forEach(tr => {
-                const text = tr.innerText.toUpperCase();
-                if (text.indexOf(input) > -1) {
-                    tr.style.display = "";
-                } else {
-                    tr.style.display = "none";
-                }
+                const text = tr.innerText.toLowerCase();
+                tr.style.display = text.includes(input) ? "" : "none";
             });
         }
 
@@ -470,7 +468,7 @@
                 document.getElementById('statTotalReg').innerText = data.stats.total_registered;
                 document.getElementById('statTotalApproved').innerText = data.stats.total_approved;
                 document.getElementById('statTotalPending').innerText = data.stats.total_pending;
-                document.getElementById('statTotalPaid').innerText = data.stats.total_paid_sum.toLocaleString() + " " + currency;
+                document.getElementById('statTotalPaid').innerText = (data.stats.total_paid_sum || 0).toLocaleString() + " " + currency;
 
                 if(data.settings) {
                     document.getElementById('drawNumberInput').value = data.settings.latest_draw_number || '';
@@ -482,7 +480,6 @@
                     if(document.getElementById('botStatusSelect')) {
                         document.getElementById('botStatusSelect').value = data.settings.bot_status || 'ACTIVE';
                     }
-                    /* ➕ የተጨመረ፦ የተቀመጠውን ስልክ ቁጥር ማሳያ */
                     if(document.getElementById('supportPhoneInput')) {
                         document.getElementById('supportPhoneInput').value = data.settings.support_phone || '';
                     }
@@ -517,7 +514,6 @@
                     const shareTxt = currentLanguage === 'am' ? 'ዕጣ' : 'share';
                     const editTxt = currentLanguage === 'am' ? '⚙️ ማስተካከያ' : '⚙️ Edit';
 
-                    /* 🛠️ ተስተካክሏል፦ 'ሰርቪስ' ወደ 'ካንሰል' ተቀይሯል */
                     const approveTxt = currentLanguage === 'am' ? 'አጽድቅ' : 'Approve';
                     const cancelTxt = currentLanguage === 'am' ? 'ካንሰል' : 'Cancel';
                     const blockTxt = currentLanguage === 'am' ? 'አግድ' : 'Block';
@@ -525,10 +521,10 @@
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td><b>${m.ref_no}</b></td>
-                        <td>${m.first_name} ${m.father_name}</td>
-                        <td>${m.phone_number}</td>
-                        <td>${m.share_count} ${shareTxt} (${(m.cycle_amount * m.share_count).toLocaleString()} ${currency})</td>
-                        <td>${m.paid_amount.toLocaleString()} ${currency}</td>
+                        <td>${m.first_name || ''} ${m.father_name || ''}</td>
+                        <td>${m.phone_number || '-'}</td>
+                        <td>${m.share_count} ${shareTxt} (${((m.cycle_amount || 0) * m.share_count).toLocaleString()} ${currency})</td>
+                        <td>${(m.paid_amount || 0).toLocaleString()} ${currency}</td>
                         <td>${paymentReceiptDisplay}</td>
                         <td><span class="badge ${badgeClass}">${m.status}</span></td>
                         <td>
@@ -537,11 +533,10 @@
                             </button>
                         </td>
                         <td>
-                            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="openGuarantorModal(${m.id}, '${m.member_cheque}', '${m.guarantor_name}', '${m.guarantor_cheque}', '${m.collateral_item}')">${editTxt}</button>
+                            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="openGuarantorModal(${m.id}, '${m.member_cheque || ''}', '${m.guarantor_name || ''}', '${m.guarantor_cheque || ''}', '${m.collateral_item || ''}')">${editTxt}</button>
                         </td>
                         <td class="action-btns">
                             <button class="btn btn-success" style="padding: 4px 6px; font-size: 0.75rem;" onclick="changeStatus(${m.id}, 'Approved')" title="${approveTxt}">${approveTxt}</button>
-                            <!-- 🛠️ ተስተካክሏል፦ ወደ Cancelled የሚቀይር አዝራር -->
                             <button class="btn btn-warning" style="padding: 4px 6px; font-size: 0.75rem; background: #f59e0b; color: white;" onclick="changeStatus(${m.id}, 'Cancelled')" title="${cancelTxt}">${cancelTxt}</button>
                             <button class="btn btn-danger" style="padding: 4px 6px; font-size: 0.75rem;" onclick="changeStatus(${m.id}, 'Blocked')" title="${blockTxt}">${blockTxt}</button>
                             <button class="btn btn-secondary" onclick="openMsgModal('${m.telegram_id}')" title="Send Message"><i class="fas fa-envelope"></i></button>
@@ -553,7 +548,7 @@
 
                 filterMembers();
 
-            } catch(e) { console.error(e); }
+            } catch(e) { console.error("Error loading admin data:", e); }
         }
 
         async function sendBroadcastAnnouncement() {
@@ -645,7 +640,6 @@
         async function saveRegistrationSettings() {
             const max_members = document.getElementById('maxMembersInput').value;
             const registration_status = document.getElementById('regStatusSelect').value;
-            /* ➕ የተጨመረ፦ የስልክ ቁጥሩን አብሮ መላኪያ */
             const support_phone = document.getElementById('supportPhoneInput').value;
 
             const res = await fetch('/api/admin/update_registration_settings', {
