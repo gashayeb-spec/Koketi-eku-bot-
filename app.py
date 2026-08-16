@@ -18,7 +18,6 @@ DB_PATH = os.environ.get("DB_PATH", "koketi_equb.db")
 UPLOAD_FOLDER = os.path.join('.', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Failed Login Attempts tracking
 failed_attempts = {}
 current_otp = None
 
@@ -108,6 +107,31 @@ def send_telegram_photo(chat_id, photo_path, caption, reply_markup=None):
         print(f"Telegram Photo Error: {e}")
         return None
 
+def get_role_reply_keyboard(chat_id):
+    """ለአድሚንና ለተራ አባላት የሚታይ Reply Keyboard ማዘጋጃ"""
+    if str(chat_id) == str(ADMIN_ID):
+        return {
+            "keyboard": [
+                [
+                    {"text": "⚙️ የአድሚን ፓናል", "web_app": {"url": f"{WEB_APP_URL}/admin"}},
+                    {"text": "📖 የእቁብ ደብተር", "web_app": {"url": WEB_APP_URL}}
+                ]
+            ],
+            "resize_keyboard": True,
+            "is_persistent": True
+        }
+    else:
+        return {
+            "keyboard": [
+                [
+                    {"text": "📖 የእቁብ ደብተር", "web_app": {"url": WEB_APP_URL}},
+                    {"text": "🧾 ሳምንታዊ ክፍያ (ስክሪንሹት)", "web_app": {"url": WEB_APP_URL}}
+                ]
+            ],
+            "resize_keyboard": True,
+            "is_persistent": True
+        }
+
 @app.route('/')
 def home():
     return send_from_directory('.', 'index.html')
@@ -120,7 +144,7 @@ def admin_page():
 def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
-# --- ADMIN AUTHENTICATION & SECURITY APIs ---
+# --- ADMIN AUTHENTICATION APIs ---
 
 @app.route('/api/admin/login', methods=['POST'])
 def admin_login():
@@ -142,13 +166,12 @@ def admin_login():
         failed_attempts[ip] = failed_attempts.get(ip, 0) + 1
         attempts = failed_attempts[ip]
 
-        # 3 ጊዜ እና ከዚያ በላይ ከተሳሳተ ለአድሚኑ የደህንነት ማስጠንቀቂያ መላክ
         if attempts >= 3:
             alert_msg = (
-                f"🚨 <b>SECURITY ALERT (የደህንነት ማስጠንቀቂያ)!</b>\n\n"
-                f"⚠️ አንድ ያልታወቀ ሰው የአድሚን ፓናሉን ለመክፈት አጠራጣሪ ሙከራ እያደረገ ነው!\n"
-                f"🌐 <b>IP Address:</b> <code>{ip}</code>\n"
-                f"❌ <b>የተሳሳተ ሙከራ ብዛት:</b> {attempts} ጊዜ"
+                f"🚨 <b>SECURITY ALERT!</b>\n\n"
+                f"⚠️ የአድሚን ፓናሉን ለመክፈት አጠራጣሪ ሙከራ ተደርጓል!\n"
+                f"🌐 <b>IP:</b> <code>{ip}</code>\n"
+                f"❌ <b>የተሳሳተ ሙከራ:</b> {attempts} ጊዜ"
             )
             send_telegram_message(ADMIN_ID, alert_msg)
 
@@ -161,7 +184,7 @@ def request_otp():
     
     msg = (
         f"🔐 <b>የአድሚን የይለፍ ቃል መቀየሪያ OTP Code!</b>\n\n"
-        f"የይለፍ ቃልዎን ለመቀየር የሚጠቀሙበት ጊዜያዊ ኮድ፦ <code>{current_otp}</code>\n\n"
+        f"ጊዜያዊ ኮድ፦ <code>{current_otp}</code>\n\n"
         f"⚠️ <i>ይህንን ኮድ ለማንም ሰው አያጋሩ!</i>"
     )
     send_telegram_message(ADMIN_ID, msg)
@@ -193,7 +216,7 @@ def reset_password():
     send_telegram_message(ADMIN_ID, "✅ <b>የአድሚን ይለፍ ቃልዎ በስኬት ተቀይሯል!</b>")
     return jsonify({"status": "success", "message": "የይለፍ ቃልዎ በስኬት ተቀይሯል!"})
 
-# --- USER & TELEGRAM BOT WEBHOOK ---
+# --- TELEGRAM BOT WEBHOOK ---
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
@@ -216,7 +239,7 @@ def webhook():
             row = cursor.fetchone()
             conn.commit()
             if row and row[0]:
-                send_telegram_message(row[0], f"🎉 <b>እንኳን ደስ አለዎት {row[1]}!</b>\n\nየዕቁብ ምዝገባዎ በአድሚን ጸድቋል። የመዝገብ ቁጥርዎ: <b>{row[2]}</b>")
+                send_telegram_message(row[0], f"🎉 <b>እንኳን ደስ አለዎት {row[1]}!</b>\n\nየዕቁብ ምዝገባዎ በአድሚን ጸድቋል። የመዝገብ ቁጥርዎ: <b>{row[2]}</b>", reply_markup=get_role_reply_keyboard(row[0]))
             requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery", json={"callback_query_id": cb_id, "text": "አባሉ በስኬት ጸድቋል!"})
 
         elif cb_data.startswith("reject_m_"):
@@ -246,22 +269,22 @@ def webhook():
         chat_id = str(update["message"]["chat"]["id"])
         text = update["message"].get("text", "")
 
-        if text.startswith("/start"):
-            conn = sqlite3.connect(DB_PATH)
-            cursor = conn.cursor()
-            
-            cursor.execute("SELECT COUNT(*) FROM equb_members WHERE status='Approved'")
-            approved_count = cursor.fetchone()[0]
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM equb_members WHERE status='Approved'")
+        approved_count = cursor.fetchone()[0]
 
-            cursor.execute("SELECT total_target_amount, latest_draw_number, latest_draw_date, current_week, winner_name FROM equb_settings WHERE id=1")
-            sett = cursor.fetchone()
-            target_amount, draw_num, draw_date, curr_week, winner = sett if sett else (2000000, 'አልወጣም', '-', 1, '-')
+        cursor.execute("SELECT total_target_amount, latest_draw_number, latest_draw_date, current_week, winner_name FROM equb_settings WHERE id=1")
+        sett = cursor.fetchone()
+        target_amount, draw_num, draw_date, curr_week, winner = sett if sett else (2000000, 'አልወጣም', '-', 1, '-')
 
-            # አንድ ሰው የፈለገውን ያህል አካውንት ሊኖረው ስለሚችል ሁሉንም አካውንቶቹን ማሳየት
-            cursor.execute("SELECT ref_no, first_name, cycle_amount, share_count, paid_amount, status, weekly_paid_status FROM equb_members WHERE telegram_id=?", (chat_id,))
-            members = cursor.fetchall()
-            conn.close()
+        cursor.execute("SELECT ref_no, first_name, cycle_amount, share_count, paid_amount, status, weekly_paid_status FROM equb_members WHERE telegram_id=?", (chat_id,))
+        members = cursor.fetchall()
+        conn.close()
 
+        role_keyboard = get_role_reply_keyboard(chat_id)
+
+        if text.startswith("/start") or "ደብተር" in text:
             if members:
                 msg = f"📖 <b>የ KOKETI ዕቁብ ደብተር (የተመዘገቡት ብዛት፦ {len(members)})</b>\n━━━━━━━━━━━━━━━━━━━\n"
                 for m in members:
@@ -279,21 +302,24 @@ def webhook():
                     "👋 <b>እንኳን ወደ KOKETI KURT & LOUNGE የዕቁብ አገልግሎት በሰላም መጡ!</b>\n\n"
                     f"👥 <b>ተመዝጋቢ አባላት:</b> {approved_count}\n"
                     f"📅 <b>የአሁኑ ሳምንት:</b> ሳምንት {curr_week}\n\n"
-                    "እባክዎን ከታች ያለውን ቁልፍ በመጫን ይመዝገቡ። (በአንድ የቴሌግራም አካውንት ከአንድ በላይ መመዝገብ ይችላሉ)"
+                    "ከታች ያለውን የሜኑ ቁልፍ በመጫን መመዝገብ ወይም ክፍያዎን መላክ ይችላሉ።"
                 )
 
-            reply_markup = {
+            inline_web = {
                 "inline_keyboard": [[
-                    {"text": "📝 የዕቁብ ገጽ / አዲስ ምዝገባ", "web_app": {"url": WEB_APP_URL}}
+                    {"text": "📖 የዕቁብ ደብተር / ክፍያ መክፈያ", "web_app": {"url": WEB_APP_URL}}
                 ]]
             }
-
             if chat_id == str(ADMIN_ID):
-                reply_markup["inline_keyboard"].append([
+                inline_web["inline_keyboard"].append([
                     {"text": "⚙️ የአድሚን መቆጣጠሪያ ፓናል", "web_app": {"url": f"{WEB_APP_URL}/admin"}}
                 ])
 
-            send_telegram_message(chat_id, msg, reply_markup)
+            send_telegram_message(chat_id, msg, reply_markup=role_keyboard)
+
+        elif "ክፍያ" in text or "ስክሪንሹት" in text:
+            msg = "🧾 <b>ሳምንታዊ ክፍያ ለመክፈል።</b>\n\nእባክዎን ከታች ያለውን ቁልፍ ተጭነው የስክሪንሹት ፎቶውን ይላኩ።"
+            send_telegram_message(chat_id, msg, reply_markup=role_keyboard)
 
     return jsonify({"status": "ok"}), 200
 
@@ -304,8 +330,6 @@ def get_member_info(telegram_id):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    
-    # የዚህ የቴሌግራም አካውንት አባላት በሙሉ
     cursor.execute("SELECT * FROM equb_members WHERE telegram_id=? ORDER BY id DESC", (telegram_id,))
     members = [dict(r) for r in cursor.fetchall()]
     
@@ -314,7 +338,6 @@ def get_member_info(telegram_id):
     
     cursor.execute("SELECT COUNT(*) as count FROM equb_members WHERE status='Approved'")
     total_approved = cursor.fetchone()['count']
-    
     conn.close()
     
     return jsonify({
@@ -447,7 +470,6 @@ def get_admin_members():
     cursor.execute("SELECT * FROM equb_members ORDER BY id DESC")
     members = [dict(row) for row in cursor.fetchall()]
     
-    # Stats Calculation
     cursor.execute("SELECT COUNT(*) as total FROM equb_members")
     total_reg = cursor.fetchone()['total']
 
@@ -492,7 +514,7 @@ def change_status(member_id):
 
     if row and row[0]:
         if new_status == 'Approved':
-            send_telegram_message(row[0], f"🎉 <b>እንኳን ደስ አለዎት {row[1]}!</b>\n\nየመዝገብ ቁጥርዎ <b>{row[2]}</b> ተረጋግጦ ጸድቋል።")
+            send_telegram_message(row[0], f"🎉 <b>እንኳን ደስ አለዎት {row[1]}!</b>\n\nየመዝገብ ቁጥርዎ <b>{row[2]}</b> ተረጋግጦ ጸድቋል።", reply_markup=get_role_reply_keyboard(row[0]))
         elif new_status == 'Blocked':
             send_telegram_message(row[0], f"⛔ <b>ሰላም {row[1]}፣</b>\n\nየአባልነት አካውንትዎ በአድሚን ታግዷል (Blocked)።")
         elif new_status == 'Cancelled':
