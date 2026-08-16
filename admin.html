@@ -11,7 +11,6 @@
     
     .dashboard-container { display: flex; flex-direction: column; gap: 15px; max-width: 1200px; margin: 0 auto; }
     
-    /* Drag & Drop Movable Cards Styling */
     .draggable-card { background-color: #1e293b; padding: 18px; border-radius: 12px; border: 1px solid #334155; transition: transform 0.2s, box-shadow 0.2s; cursor: move; }
     .draggable-card.dragging { opacity: 0.5; border: 2px dashed #38bdf8; }
     .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 12px; }
@@ -217,7 +216,6 @@
 <script>
 let currentMembers = [];
 
-// Drag & Drop Functionality for Movable Cards
 const container = document.getElementById('dashboardContainer');
 let draggedCard = null;
 
