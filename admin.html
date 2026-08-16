@@ -113,7 +113,6 @@
         .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display:none; justify-content:center; align-items:center; z-index:1100; }
         .modal-content { background: #1e293b; border-radius: 12px; padding: 25px; width: 90%; max-width: 500px; border: 1px solid var(--gold); max-height: 90vh; overflow-y: auto; }
 
-        /* Image Modal Layer Fix */
         #imageViewerModal { z-index: 2000; }
 
         @media(max-width: 768px) {
@@ -127,7 +126,7 @@
     <!-- Log In Overlay -->
     <div id="loginOverlay">
         <div class="login-card">
-            <i class="fas fa-lock-open-alt" style="font-size: 3rem; color: var(--gold); margin-bottom: 15px;"></i>
+            <i class="fas fa-lock" style="font-size: 3rem; color: var(--gold); margin-bottom: 15px;"></i>
             <h2 data-am="KOKETI የአድሚን መግቢያ" data-en="KOKETI Admin Log In">KOKETI የአድሚን መግቢያ</h2>
             <div class="input-group">
                 <label data-am="የአድሚን ይለፍ ቃል" data-en="Admin Password">የአድሚን ይለፍ ቃል</label>
@@ -363,11 +362,17 @@
             loadAdminData();
         }
 
-        function checkAuth() {
-            if (sessionStorage.getItem('adminAuth') === 'true') {
-                document.getElementById('loginOverlay').style.display = 'none';
-                loadAdminData();
-            } else {
+        async function checkAuth() {
+            try {
+                const res = await fetch('/api/admin/check_auth');
+                const data = await res.json();
+                if (data.authenticated) {
+                    document.getElementById('loginOverlay').style.display = 'none';
+                    loadAdminData();
+                } else {
+                    document.getElementById('loginOverlay').style.display = 'flex';
+                }
+            } catch(e) {
                 document.getElementById('loginOverlay').style.display = 'flex';
             }
         }
@@ -385,7 +390,6 @@
                 });
                 const data = await res.json();
                 if (res.ok && data.status === 'success') {
-                    sessionStorage.setItem('adminAuth', 'true');
                     document.getElementById('loginOverlay').style.display = 'none';
                     loadAdminData();
                 } else {
@@ -398,8 +402,8 @@
             }
         }
 
-        function logout() {
-            sessionStorage.removeItem('adminAuth');
+        async function logout() {
+            await fetch('/api/admin/logout', { method: 'POST' });
             window.location.reload();
         }
 
@@ -461,6 +465,10 @@
         async function loadAdminData() {
             try {
                 const res = await fetch('/api/admin/members');
+                if (res.status === 401) {
+                    document.getElementById('loginOverlay').style.display = 'flex';
+                    return;
+                }
                 const data = await res.json();
                 
                 const currency = currentLanguage === 'am' ? 'ብር' : 'ETB';
