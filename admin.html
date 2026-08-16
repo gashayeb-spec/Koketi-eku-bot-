@@ -315,7 +315,7 @@ async function resetPassword() {
 }
 
 async function loadData() {
-    const res = await fetch('/api/admin/members');
+    const res = await fetch('/api/admin/members?t=' + new Date().getTime());
     const data = await res.json();
     currentMembers = data.members;
     
@@ -350,7 +350,7 @@ async function loadData() {
             : 'የለም';
 
         row.innerHTML = `
-            <td><b>${m.ref_no}</b></td>
+            <td><b>${m.ref_no}</b><br><small style="color:#8b5cf6;">RefBy: ${m.referred_by || '-'}</small></td>
             <td>${m.first_name} ${m.father_name}<br><small>${m.phone_number}</small><br><b>${m.share_count} ዕጣ</b></td>
             <td>
                 <button class="btn-action ${isPaid ? 'btn-paid' : 'btn-unpaid-status'}" onclick="togglePayment(${m.id}, ${isPaid ? 0 : 1})">
