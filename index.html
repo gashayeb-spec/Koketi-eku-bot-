@@ -28,8 +28,7 @@
     .user-profile-badge { background: #0f172a; border: 1px solid #334155; padding: 12px; border-radius: 8px; margin-bottom: 12px; }
     .stats-bar { background: #0f172a; border-radius: 8px; padding: 10px; margin-bottom: 15px; font-size: 12px; text-align: center; border: 1px solid #334155; }
     
-    /* Bottom Navigation Bar */
-    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; border-top: 1px solid #334155; display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; }
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; border-top: 1px solid #334155; display: flex; justify-around: space-around; padding: 8px 0; z-index: 100; }
     .nav-item { color: #94a3b8; text-decoration: none; text-align: center; font-size: 11px; flex: 1; cursor: pointer; }
     .nav-item.active { color: #38bdf8; font-weight: bold; }
     .nav-item div { font-size: 18px; margin-bottom: 2px; }
@@ -49,13 +48,13 @@
         👥 <b>የተመዘገቡ አባላት፦</b> <span id="public_count" style="color:#38bdf8; font-weight:bold;">0</span> / <span id="public_max">100</span>
     </div>
 
-    <!-- 1. የዕቁብ ደብተር ገጽ -->
+    <!-- Tab 1: Member Dashboard -->
     <div id="tab-book" class="tab-content">
         <div class="section-title">📖 የኔ የዕቁብ ደብተር (አካውንቶች)</div>
         <div id="accountsContainer">መረጃዎችን በመጫን ላይ...</div>
     </div>
 
-    <!-- 2. የክፍያ ስክሪንሹት መላኪያ ገጽ -->
+    <!-- Tab 2: Upload Payment -->
     <div id="tab-payment" class="tab-content" style="display:none;">
         <div class="section-title">🧾 የሳምንታዊ ክፍያ ስክሪንሹት መላኪያ</div>
         <form id="weeklyPaymentForm">
@@ -72,7 +71,7 @@
         </form>
     </div>
 
-    <!-- 3. አዲስ ምዝገባ ገጽ -->
+    <!-- Tab 3: New Registration -->
     <div id="tab-register" class="tab-content" style="display:none;">
         <div id="closedNotice">
             <h3>🚫 የምዝገባ ሂደቱ ተጠናቋል!</h3>
@@ -168,7 +167,6 @@
     </div>
 </div>
 
-<!-- Bottom Navigation Bar -->
 <div class="bottom-nav">
     <div class="nav-item active" onclick="switchTab('tab-book', this)">
         <div>📖</div>ደብተር
@@ -186,7 +184,6 @@
     if (tg) tg.expand();
     const telegram_id = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : '';
 
-    // Extract Referral Parameter if opened via referral link
     const urlParams = new URLSearchParams(window.location.search);
     const refCode = urlParams.get('ref') || '-';
 
@@ -227,7 +224,7 @@
     }
 
     function copyReferralLink(refNo) {
-        const botUsername = 'koketi_eku_bot'; // Replace if username changes
+        const botUsername = 'koketi_eku_bot';
         const link = `https://t.me/${botUsername}?start=ref_${refNo}`;
         navigator.clipboard.writeText(link).then(() => {
             alert(`🔗 የሪፈራል ሊንክዎ ተቀድቷል (Copied)!\n\n${link}\n\nይህንን ሊንክ ለጓደኛዎ በመላክ መጋበዝ ይችላሉ።`);
@@ -255,8 +252,6 @@
                         const paidStatus = m.weekly_paid_status === 1 
                             ? '<span class="status-pill paid">✅ የዚህ ሳምንት ተከፍሏል</span>' 
                             : '<span class="status-pill unpaid">❌ የዚህ ሳምንት አልተከፈለም</span>';
-
-                        const targetAmount = (m.cycle_amount || 5000) * (m.share_count || 1);
 
                         container.innerHTML += `
                             <div class="user-profile-badge">
