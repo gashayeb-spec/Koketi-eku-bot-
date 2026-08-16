@@ -15,7 +15,6 @@ DB_PATH = os.environ.get("DB_PATH", "koketi_equb.db")
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    # የዕቁብ አባላት ሠንጠረዥ
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS equb_members (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,6 +28,7 @@ def init_db():
             region TEXT,
             payment_method TEXT,
             cycle_amount REAL,
+            share_count INTEGER DEFAULT 1,
             paid_amount REAL DEFAULT 0,
             status TEXT DEFAULT 'Pending',
             member_cheque TEXT,
@@ -38,13 +38,14 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    # የዕቁብ አጠቃላይ ሴቲንግ (የዕጣ ቁጥር፣ ቀን፣ ጠቅላላ የብር ግብ)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS equb_settings (
             id INTEGER PRIMARY KEY DEFAULT 1,
             total_target_amount REAL DEFAULT 2000000,
             latest_draw_number TEXT DEFAULT 'አልወጣም',
-            latest_draw_date TEXT DEFAULT '-'
+            latest_draw_date TEXT DEFAULT '-',
+            current_week INTEGER DEFAULT 1,
+            winner_name TEXT DEFAULT '-'
         )
     ''')
     cursor.execute('INSERT OR IGNORE INTO equb_settings (id, total_target_amount) VALUES (1, 2000000)')
@@ -67,6 +68,10 @@ def send_telegram_message(chat_id, text, reply_markup=None):
 def home():
     return send_from_directory('.', 'index.html')
 
+@app.route('/admin')
+def admin_page():
+    return send_from_directory('.', 'admin.html')
+
 @app.route('/webhook', methods=['POST'])
 def webhook():
     update = request.json
@@ -78,57 +83,57 @@ def webhook():
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
             
-            # የአባላት ብዛት ማወቅ
             cursor.execute("SELECT COUNT(*) FROM equb_members WHERE status='Approved'")
             approved_count = cursor.fetchone()[0]
 
-            # የሴቲንግ መረጃዎች
-            cursor.execute("SELECT total_target_amount, latest_draw_number, latest_draw_date FROM equb_settings WHERE id=1")
+            cursor.execute("SELECT total_target_amount, latest_draw_number, latest_draw_date, current_week, winner_name FROM equb_settings WHERE id=1")
             sett = cursor.fetchone()
-            target_amount, draw_num, draw_date = sett if sett else (2000000, 'አልወጣም', '-')
+            target_amount, draw_num, draw_date, curr_week, winner = sett if sett else (2000000, 'አልወጣም', '-', 1, '-')
 
-            # የአባሉን መረጃ መፈለግ
-            cursor.execute("SELECT ref_no, first_name, cycle_amount, paid_amount, status, member_cheque, guarantor_name, guarantor_cheque, collateral_item FROM equb_members WHERE telegram_id=?", (chat_id,))
+            cursor.execute("SELECT ref_no, first_name, cycle_amount, share_count, paid_amount, status, member_cheque, guarantor_name, guarantor_cheque, collateral_item FROM equb_members WHERE telegram_id=?", (chat_id,))
             member = cursor.fetchone()
             conn.close()
 
             if member:
-                ref_no, name, cycle_amt, paid_amt, status, m_cheque, g_name, g_cheque, col_item = member
-                remaining = max(0, cycle_amt - paid_amt)
+                ref_no, name, cycle_amt, shares, paid_amt, status, m_cheque, g_name, g_cheque, col_item = member
+                total_cycle = cycle_amt * shares
+                remaining = max(0, total_cycle - paid_amt)
 
                 if status == 'Pending':
                     msg = (
                         f"👋 <b>ሰላም {name}!</b>\n\n"
                         f"📌 <b>የመዝገብ ቁጥር:</b> {ref_no}\n"
-                        f"⏳ <b>የምዝገባ ሁኔታ:</b> <a href='#'>በአድሚን በመረጋገጥ ላይ (Pending)</a>\n\n"
-                        f"<i>አድሚኑ መረጃዎትን አረጋግጦ ሲያጸድቀው ዲጂታል የዕቁብ ደብተርዎ ይከፈታል።</i>"
+                        f"⏳ <b>የምዝገባ ሁኔታ:</b> <code>በአድሚን በመረጋገጥ ላይ (Pending)</code>\n\n"
+                        f"<i>መረጃዎ ተረጋግጦ ሲጸድቅ ዲጂታል የዕቁብ ደብተርዎ ይከፈታል።</i>"
                     )
                 else:
                     msg = (
                         f"📖 <b>የ KOKETI ዕቁብ ደብተር (Passbook)</b>\n"
                         f"━━━━━━━━━━━━━━━━━━━\n"
                         f"👤 <b>አባል:</b> {name} ({ref_no})\n"
-                        f"👥 <b>ጠቅላላ የዕቁብ አባላት ብዛት:</b> {approved_count} አባላት\n"
-                        f"🎯 <b>ጠቅላላ የዕቁብ ግብ:</b> {target_amount:,.2f} ብር\n"
+                        f"👥 <b>ጠቅላላ አባላት:</b> {approved_count}\n"
+                        f"📅 <b>የአሁኑ ሳምንት:</b> ሳምንት {curr_week}\n"
                         f"━━━━━━━━━━━━━━━━━━━\n"
-                        f"💰 <b>የእርስዎ የዕቁብ ዙር:</b> {cycle_amt:,.2f} ብር\n"
+                        f"🎲 <b>የሳምንቱ የወጣው ዕጣ ቁጥር:</b> {draw_num}\n"
+                        f"🏆 <b>የዕጣው ባለቤት:</b> {winner}\n"
+                        f"📅 <b>የዕጣ ቀን:</b> {draw_date}\n"
+                        f"━━━━━━━━━━━━━━━━━━━\n"
+                        f"💰 <b>የዕቁብ ዙር (በአንድ ዕጣ):</b> {cycle_amt:,.2f} ብር\n"
+                        f"🔢 <b>የዕጣ ብዛት:</b> {shares} ዕጣ\n"
+                        f"💵 <b>ጠቅላላ ክፍያዎ:</b> {total_cycle:,.2f} ብር\n"
                         f"✅ <b>እስካሁን የከፈሉት:</b> {paid_amt:,.2f} ብር\n"
                         f"🔻 <b>ቀሪ እዳዎ:</b> {remaining:,.2f} ብር\n"
                         f"━━━━━━━━━━━━━━━━━━━\n"
-                        f"🎲 <b>የሳምንቱ የወጣው ዕጣ ቁጥር:</b> {draw_num}\n"
-                        f"📅 <b>የዕጣ ቀን:</b> {draw_date}\n"
-                        f"━━━━━━━━━━━━━━━━━━━\n"
-                        f"🔒 <b>የግልና የዋስትና መረጃዎ (ለእርስዎ ብቻ የሚታይ)፦</b>\n"
-                        f"• የእርስዎ ቼክ: {m_cheque or 'አልተመዘገበም'}\n"
-                        f"• የዋስ ስም: {g_name or 'አልተመዘገበም'}\n"
-                        f"• የዋስ ቼክ: {g_cheque or 'አልተመዘገበም'}\n"
-                        f"• የዋስትና ንብረት: {col_item or 'አልተመዘገበም'}"
+                        f"🔒 <b>የእርስዎ የዋስትና መረጃ፦</b>\n"
+                        f"• ቼክ: {m_cheque or 'አልተመዘገበም'}\n"
+                        f"• የዋስ ስም: {g_name or 'አልተመዘገበም'}"
                     )
             else:
                 msg = (
                     "👋 <b>እንኳን ወደ KOKETI KURT & LOUNGE የዕቁብ አገልግሎት በሰላም መጡ!</b>\n\n"
-                    f"👥 <b>አሁን ያሉት ተመዝጋቢ አባላት ብዛት:</b> {approved_count}\n\n"
-                    "ከታች ያለውን ቁልፍ በመጫን መመዝገብ ይችላሉ።"
+                    f"👥 <b>ተመዝጋቢ አባላት:</b> {approved_count}\n"
+                    f"📅 <b>የአሁኑ ሳምንት:</b> ሳምንት {curr_week}\n\n"
+                    "እባክዎን ከታች ያለውን ቁልፍ በመጫን ይመዝገቡ።"
                 )
 
             reply_markup = {
@@ -136,9 +141,81 @@ def webhook():
                     {"text": "📝 የዕቁብ መመዝገቢያ ፎርም", "web_app": {"url": WEB_APP_URL}}
                 ]]
             }
+
+            if chat_id == str(ADMIN_ID):
+                reply_markup["inline_keyboard"].append([
+                    {"text": "⚙️ የአድሚን መቆጣጠሪያ ፓናል", "web_app": {"url": f"{WEB_APP_URL}/admin"}}
+                ])
+
             send_telegram_message(chat_id, msg, reply_markup)
 
     return jsonify({"status": "ok"}), 200
+
+@app.route('/api/admin/members', methods=['GET'])
+def get_admin_members():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM equb_members ORDER BY id DESC")
+    members = [dict(row) for row in cursor.fetchall()]
+    
+    cursor.execute("SELECT * FROM equb_settings WHERE id=1")
+    settings = dict(cursor.fetchone())
+    conn.close()
+    
+    return jsonify({"members": members, "settings": settings})
+
+@app.route('/api/admin/approve/<int:member_id>', methods=['POST'])
+def approve_member(member_id):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE equb_members SET status='Approved' WHERE id=?", (member_id,))
+    cursor.execute("SELECT telegram_id, first_name, ref_no FROM equb_members WHERE id=?", (member_id,))
+    row = cursor.fetchone()
+    conn.commit()
+    conn.close()
+
+    if row and row[0]:
+        send_telegram_message(row[0], f"🎉 <b>እንኳን ደስ አለዎት {row[1]}!</b>\n\nየመዝገብ ቁጥርዎ <b>{row[2]}</b> ተረጋግጧል። አሁን /start በማለት የዕቁብ ደብተርዎን ማየት ይችላሉ።")
+
+    return jsonify({"status": "success"})
+
+@app.route('/api/admin/update_draw', methods=['POST'])
+def update_draw():
+    data = request.json
+    draw_num = data.get('draw_number')
+    draw_date = data.get('draw_date')
+    week = data.get('current_week')
+    winner = data.get('winner_name')
+    broadcast = data.get('broadcast', False)
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        UPDATE equb_settings 
+        SET latest_draw_number=?, latest_draw_date=?, current_week=?, winner_name=? 
+        WHERE id=1
+    ''', (draw_num, draw_date, week, winner))
+    conn.commit()
+
+    if broadcast:
+        cursor.execute("SELECT telegram_id FROM equb_members WHERE status='Approved' AND telegram_id != ''")
+        users = cursor.fetchall()
+        announcement = (
+            f"📣 <b>የ KOKETI ዕቁብ ሳምንታዊ ማስታወቂያ!</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━\n"
+            f"📅 <b>ሳምንት:</b> {week}\n"
+            f"🎲 <b>የወጣው ዕጣ ቁጥር:</b> <code>{draw_num}</code>\n"
+            f"🏆 <b>የዕጣው ባለቤት:</b> <b>{winner}</b>\n"
+            f"📆 <b>የወጣበት ቀን:</b> {draw_date}\n"
+            f"━━━━━━━━━━━━━━━━━━━\n"
+            f"👏 ለባለዕጣው እንኳን ደስ አለዎት! ቀጣዩን ዝርዝር በ /start ማየት ይችላሉ።"
+        )
+        for u in users:
+            send_telegram_message(u[0], announcement)
+
+    conn.close()
+    return jsonify({"status": "success"})
 
 @app.route('/api/register', methods=['POST'])
 def register_equb():
@@ -160,6 +237,7 @@ def register_equb():
         region = data.get('region_select', '')
         payment_method = data.get('payment_method', '')
         cycle_amount = float(data.get('cycle_amount', 0))
+        share_count = int(data.get('share_count', 1))
         paid_amount = float(data.get('paid_amount', 0))
         member_cheque = data.get('member_cheque', '')
         guarantor_name = data.get('guarantor_name', '')
@@ -170,35 +248,33 @@ def register_equb():
             INSERT INTO equb_members (
                 ref_no, telegram_id, first_name, father_name, grand_name,
                 phone_number, gps_location, region, payment_method, cycle_amount,
-                paid_amount, member_cheque, guarantor_name,
+                share_count, paid_amount, member_cheque, guarantor_name,
                 guarantor_cheque, collateral_item, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')
         ''', (
             ref_no, telegram_id, first_name, father_name, grand_name,
             phone_number, gps_location, region, payment_method, cycle_amount,
-            paid_amount, member_cheque, guarantor_name,
+            share_count, paid_amount, member_cheque, guarantor_name,
             guarantor_cheque, collateral_item
         ))
         
         conn.commit()
         conn.close()
 
-        # ለአድሚኑ ማሳወቂያ መላክ
         msg_admin = (
-            f"🔔 <b>አዲስ አባል ተመዝግቧል (ማረጋገጫ ይፈልጋል)!</b>\n\n"
-            f"🆔 <b>Ref No:</b> {ref_no}\n"
-            f"👤 <b>ስም:</b> {first_name} {father_name} {grand_name}\n"
+            f"🔔 <b>አዲስ አባል ተመዝግቧል!</b>\n\n"
+            f"🆔 <b>Ref:</b> {ref_no}\n"
+            f"👤 <b>ስም:</b> {first_name} {father_name}\n"
             f"📞 <b>ስልክ:</b> {phone_number}\n"
-            f"💳 <b>የክፍያ መንገድ:</b> {payment_method}\n"
-            f"💵 <b>የዕቁብ መጠን:</b> {cycle_amount:,.2f} ብር\n"
-            f"✅ <b>የተከፈለ:</b> {paid_amount:,.2f} ብር"
+            f"🔢 <b>የዕጣ ብዛት:</b> {share_count}\n"
+            f"💵 <b>ዙር:</b> {cycle_amount:,.2f} ብር"
         )
         send_telegram_message(ADMIN_ID, msg_admin)
 
-        return jsonify({"status": "success", "message": "ምዝገባዎ ተልኳል! አድሚኑ ሲያረጋግጠው ደብተርዎ ይከፈታል።"}), 200
+        return jsonify({"status": "success", "message": "ምዝገባው ተጠናቅቋል!"}), 200
 
     except sqlite3.IntegrityError:
-        return jsonify({"status": "error", "message": "ይህ የመዝገብ ቁጥር አስቀድሞ ተመዝግቧል!"}), 400
+        return jsonify({"status": "error", "message": "ይህ መዝገብ ቁጥር አስቀድሞ አለ!"}), 400
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
