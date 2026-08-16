@@ -46,6 +46,7 @@ def init_db():
             guarantor_cheque TEXT DEFAULT '-',
             collateral_item TEXT DEFAULT '-',
             receipt_path TEXT DEFAULT '-',
+            referred_by TEXT DEFAULT '-',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -198,12 +199,16 @@ def webhook():
 
         elif cb_data.startswith("approve_pay_"):
             m_id = cb_data.replace("approve_pay_", "")
-            cursor.execute("UPDATE equb_members SET weekly_paid_status=1 WHERE id=?", (m_id,))
-            cursor.execute("SELECT telegram_id, first_name FROM equb_members WHERE id=?", (m_id,))
+            cursor.execute("SELECT cycle_amount, share_count, paid_amount, telegram_id, first_name, ref_no FROM equb_members WHERE id=?", (m_id,))
             row = cursor.fetchone()
-            conn.commit()
-            if row and row[0]:
-                send_telegram_message(row[0], f"✅ <b>ሰላም {row[1]}፣</b>\nየላኩት ክፍያ ስክሪንሹት ተረጋግጦ ጸድቋል!")
+            if row:
+                cycle_amt, share_cnt, curr_paid, tg_id, f_name, r_no = row
+                add_pay = cycle_amt * share_cnt
+                new_paid = curr_paid + add_pay
+                cursor.execute("UPDATE equb_members SET weekly_paid_status=1, paid_amount=? WHERE id=?", (new_paid, m_id))
+                conn.commit()
+                if tg_id:
+                    send_telegram_message(tg_id, f"✅ <b>ሰላም {f_name}፣</b>\nለአካውንትዎ (Ref: <b>{r_no}</b>) የላኩት የዚህ ሳምንት ክፍያ {add_pay:,.2f} ብር ተረጋግጦ በደብተርዎ ላይ ጸድቋል!")
             requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery", json={"callback_query_id": cb_id, "text": "የሳምንቱ ክፍያ ተጸድቋል!"})
 
         conn.close()
@@ -271,6 +276,7 @@ def register_equb():
         share_count = int(request.form.get('share_count', 1))
         cycle_amount = float(request.form.get('cycle_amount', 5000))
         payment_method = request.form.get('payment_method', '')
+        referred_by = request.form.get('referred_by', '-')
 
         receipt_file = request.files.get('receipt')
         receipt_filename = '-'
@@ -287,15 +293,26 @@ def register_equb():
             INSERT INTO equb_members (
                 ref_no, telegram_id, first_name, father_name, grand_name,
                 phone_number, gps_location, region, payment_method, cycle_amount,
-                share_count, paid_amount, status, receipt_path
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'Pending', ?)
-        ''', (ref_no, telegram_id, first_name, father_name, grand_name, phone_number, gps_location, region, payment_method, cycle_amount, share_count, receipt_filename))
+                share_count, paid_amount, status, receipt_path, referred_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'Pending', ?, ?)
+        ''', (ref_no, telegram_id, first_name, father_name, grand_name, phone_number, gps_location, region, payment_method, cycle_amount, share_count, receipt_filename, referred_by))
         member_id = cursor.lastrowid
         conn.commit()
         conn.close()
 
-        msg_admin = f"🔔 <b>አዲስ አባል ተመዝግቧል!</b>\n\n🆔 <b>Ref No:</b> {ref_no}\n👤 <b>ስም:</b> {first_name} {father_name} {grand_name}\n📞 <b>ስልክ:</b> {phone_number}\n🎲 <b>የዕጣ ብዛት:</b> {share_count}\n💵 <b>የዕጣ ዙር:</b> {cycle_amount:,.2f} ብር"
-        inline_markup = {"inline_keyboard": [[{"text": "✅ አጽድቅ", "callback_data": f"approve_m_{member_id}"}, {"text": "❌ ውድቅ አድርግ", "callback_data": f"reject_m_{member_id}"}]]}
+        msg_admin = (
+            f"🔔 <b>አዲስ አባል ተመዝግቧል!</b>\n\n"
+            f"🆔 <b>Ref No:</b> {ref_no}\n"
+            f"👤 <b>ስም:</b> {first_name} {father_name} {grand_name}\n"
+            f"📞 <b>ስልክ:</b> {phone_number}\n"
+            f"🎲 <b>የዕጣ ብዛት:</b> {share_count}\n"
+            f"💵 <b>የዕጣ ዙር:</b> {cycle_amount:,.2f} ብር\n"
+            f"🔗 <b>ሪፈራል:</b> {referred_by}"
+        )
+        inline_markup = {"inline_keyboard": [
+            [{"text": "✅ አጽድቅ", "callback_data": f"approve_m_{member_id}"}, {"text": "❌ ውድቅ አድርግ", "callback_data": f"reject_m_{member_id}"}],
+            [{"text": "⚙️ ወደ አድሚን ፓናል ግባ", "web_app": {"url": f"{WEB_APP_URL}/admin"}}]
+        ]}
 
         if filepath and os.path.exists(filepath):
             send_telegram_photo(ADMIN_ID, filepath, msg_admin, inline_markup)
@@ -329,8 +346,17 @@ def upload_weekly_receipt():
     filepath = os.path.join(UPLOAD_FOLDER, filename)
     receipt_file.save(filepath)
 
-    caption = f"🧾 <b>አዲስ የሳምንታዊ ክፍያ ስክሪንሹት!</b>\n\n👤 <b>አባል:</b> {member['first_name']} {member['father_name']}\n🔢 <b>Ref No:</b> {member['ref_no']}\n📞 <b>ስልክ:</b> {member['phone_number']}"
-    inline_markup = {"inline_keyboard": [[{"text": "✅ ክፍያውን አጽድቅ", "callback_data": f"approve_pay_{member['id']}"}]]}
+    caption = (
+        f"🧾 <b>አዲስ የሳምንታዊ ክፍያ ስክሪንሹት!</b>\n\n"
+        f"👤 <b>አባል:</b> {member['first_name']} {member['father_name']}\n"
+        f"🔢 <b>Ref No:</b> {member['ref_no']}\n"
+        f"📞 <b>ስልክ:</b> {member['phone_number']}\n"
+        f"💰 <b>የሳምንቱ ክፍያ:</b> {member['cycle_amount'] * member['share_count']:,.2f} ብር"
+    )
+    inline_markup = {"inline_keyboard": [
+        [{"text": "✅ ክፍያውን አጽድቅ", "callback_data": f"approve_pay_{member['id']}"}],
+        [{"text": "⚙️ ወደ አድሚን ፓናል ግባ", "web_app": {"url": f"{WEB_APP_URL}/admin"}}]
+    ]}
     send_telegram_photo(ADMIN_ID, filepath, caption, inline_markup)
     return jsonify({"status": "success", "message": "ስክሪንሹቱ ለአድሚኑ ተልኳል!"}), 200
 
@@ -429,16 +455,21 @@ def toggle_payment(member_id):
     status = data.get('weekly_paid_status', 0)
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("UPDATE equb_members SET weekly_paid_status=? WHERE id=?", (status, member_id))
-    cursor.execute("SELECT telegram_id, first_name FROM equb_members WHERE id=?", (member_id,))
+    
+    cursor.execute("SELECT cycle_amount, share_count, paid_amount, telegram_id, first_name, ref_no FROM equb_members WHERE id=?", (member_id,))
     row = cursor.fetchone()
-    conn.commit()
+    if row:
+        cycle_amt, share_cnt, curr_paid, tg_id, f_name, r_no = row
+        add_pay = cycle_amt * share_cnt
+        new_paid = curr_paid + add_pay if status == 1 else max(0, curr_paid - add_pay)
+        cursor.execute("UPDATE equb_members SET weekly_paid_status=?, paid_amount=? WHERE id=?", (status, new_paid, member_id))
+        conn.commit()
+
+        if tg_id:
+            msg = f"✅ <b>የዚህ ሳምንት ክፍያዎ ({add_pay:,.2f} ብር) በአድሚኑ ተረጋግጦ ጸድቋል!</b>" if status == 1 else "⚠️ <b>የዚህ ሳምንት ክፍያዎ አልተከፈለም ተብሎ ተስተካክሏል።</b>"
+            send_telegram_message(tg_id, f"👋 ሰላም {f_name} (Ref: {r_no}),\n\n{msg}")
+
     conn.close()
-
-    if row and row[0]:
-        msg = "✅ <b>የዚህ ሳምንት ክፍያዎ ተመዝግቧል!</b>" if status == 1 else "⚠️ <b>የዚህ ሳምንት ክፍያዎ አልተከፈለም ተብሎ ተስተካክሏል።</b>"
-        send_telegram_message(row[0], f"👋 ሰላም {row[1]},\n\n{msg}")
-
     return jsonify({"status": "success"})
 
 @app.route('/api/admin/send_direct_msg', methods=['POST'])
@@ -457,13 +488,13 @@ def notify_unpaid():
     cursor = conn.cursor()
     cursor.execute("SELECT current_week FROM equb_settings WHERE id=1")
     curr_week = cursor.fetchone()[0]
-    cursor.execute("SELECT telegram_id, first_name, cycle_amount, share_count FROM equb_members WHERE status='Approved' AND weekly_paid_status=0 AND telegram_id != ''")
+    cursor.execute("SELECT telegram_id, first_name, cycle_amount, share_count, ref_no FROM equb_members WHERE status='Approved' AND weekly_paid_status=0 AND telegram_id != ''")
     unpaid_members = cursor.fetchall()
     conn.close()
 
     count = 0
     for m in unpaid_members:
-        msg = f"⚠️ <b>ማሳሰቢያ፦ የሳምንት {curr_week} የዕቁብ ክፍያ!</b>\n\nሰላም <b>{m[1]}</b>፣ ክፍያዎ አልተመዘገበም።\n💰 ክፍያ መጠን፦ <b>{m[2] * m[3]:,.2f} ብር</b>"
+        msg = f"⚠️ <b>ማሳሰቢያ፦ የሳምንት {curr_week} የዕቁብ ክፍያ!</b>\n\nሰላም <b>{m[1]}</b> (Ref: {m[4]})፣ ክፍያዎ አልተመዘገበም።\n💰 ክፍያ መጠን፦ <b>{m[2] * m[3]:,.2f} ብር</b>"
         send_telegram_message(m[0], msg)
         count += 1
 
@@ -484,10 +515,10 @@ def update_draw():
     conn.commit()
 
     if broadcast:
-        cursor.execute("SELECT first_name, weekly_paid_status FROM equb_members WHERE status='Approved'")
+        cursor.execute("SELECT first_name, ref_no, weekly_paid_status FROM equb_members WHERE status='Approved'")
         all_members = cursor.fetchall()
-        paid_text = "\n".join([f"• {name} ✅" for name, paid in all_members if paid == 1]) or "የለም"
-        unpaid_text = "\n".join([f"• {name} ❌" for name, paid in all_members if paid == 0]) or "የለም"
+        paid_text = "\n".join([f"• {name} ({ref}) ✅" for name, ref, paid in all_members if paid == 1]) or "የለም"
+        unpaid_text = "\n".join([f"• {name} ({ref}) ❌" for name, ref, paid in all_members if paid == 0]) or "የለም"
 
         announcement = (
             f"📣 <b>የ KOKETI ዕቁብ ሳምንት {week} መረጃ!</b>\n"
