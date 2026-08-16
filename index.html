@@ -16,6 +16,7 @@
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .btn-gps { background-color: #0284c7; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 12px; margin-top: 4px; width: 100%; }
     .btn-submit, .btn-upload { background-color: #22c55e; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; margin-top: 15px; }
+    .btn-ref { background-color: #8b5cf6; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; margin-top: 8px; width: 100%; }
     .section-title { color: #f59e0b; font-size: 14px; border-bottom: 1px solid #334155; padding-bottom: 4px; margin-top: 15px; margin-bottom: 12px; font-weight: bold; }
     
     #closedNotice { display: none; text-align: center; padding: 25px 15px; }
@@ -50,7 +51,7 @@
 
     <!-- 1. የዕቁብ ደብተር ገጽ -->
     <div id="tab-book" class="tab-content">
-        <div class="section-title">📖 የኔ የዕቁብ ደብተር</div>
+        <div class="section-title">📖 የኔ የዕቁብ ደብተር (አካውንቶች)</div>
         <div id="accountsContainer">መረጃዎችን በመጫን ላይ...</div>
     </div>
 
@@ -80,6 +81,11 @@
 
         <form id="equbForm">
             <div class="section-title">📝 አዲስ መመዝገቢያ ፎርም</div>
+            
+            <div id="refAlertBox" style="display:none; background:#8b5cf622; border:1px solid #8b5cf6; padding:8px; border-radius:6px; font-size:12px; color:#c084fc; margin-bottom:12px;">
+                🔗 በሪፈራል ሊንክ መዝገብ ቁጥር፦ <b id="refCodeDisplay">-</b> ተጋብዘዋል!
+            </div>
+
             <div class="form-group">
                 <label>የመዝገብ/አባል ቁጥር (Ref No)*</label>
                 <input type="text" id="ref_no" readonly style="background-color: #334155; font-weight: bold; color: #38bdf8;">
@@ -180,6 +186,15 @@
     if (tg) tg.expand();
     const telegram_id = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : '';
 
+    // Extract Referral Parameter if opened via referral link
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref') || '-';
+
+    if (refCode !== '-') {
+        document.getElementById('refAlertBox').style.display = 'block';
+        document.getElementById('refCodeDisplay').innerText = refCode;
+    }
+
     function switchTab(tabId, el) {
         document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
         document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
@@ -211,10 +226,20 @@
         if(input.files && input.files[0]) { span.innerText = '✅ ' + input.files[0].name; span.style.color = '#22c55e'; }
     }
 
+    function copyReferralLink(refNo) {
+        const botUsername = 'koketi_eku_bot'; // Replace if username changes
+        const link = `https://t.me/${botUsername}?start=ref_${refNo}`;
+        navigator.clipboard.writeText(link).then(() => {
+            alert(`🔗 የሪፈራል ሊንክዎ ተቀድቷል (Copied)!\n\n${link}\n\nይህንን ሊንክ ለጓደኛዎ በመላክ መጋበዝ ይችላሉ።`);
+        }).catch(() => {
+            alert(`የሪፈራል ሊንክ፦\n${link}`);
+        });
+    }
+
     async function loadUserData() {
         if (!telegram_id) return;
         try {
-            const res = await fetch('/api/member_info/' + telegram_id);
+            const res = await fetch('/api/member_info/' + telegram_id + '?t=' + new Date().getTime());
             if (res.ok) {
                 const data = await res.json();
                 document.getElementById('public_count').innerText = data.total_approved;
@@ -231,6 +256,8 @@
                             ? '<span class="status-pill paid">✅ የዚህ ሳምንት ተከፍሏል</span>' 
                             : '<span class="status-pill unpaid">❌ የዚህ ሳምንት አልተከፈለም</span>';
 
+                        const targetAmount = (m.cycle_amount || 5000) * (m.share_count || 1);
+
                         container.innerHTML += `
                             <div class="user-profile-badge">
                                 <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -240,10 +267,14 @@
                                 <div style="margin-top:8px; font-size:12px; color:#cbd5e1;">
                                     🎲 ዕጣ: <b>${m.share_count}</b> | 📌 ሁኔታ: <b>${m.status}</b>
                                 </div>
+                                <div style="margin-top:4px; font-size:12px; color:#94a3b8;">
+                                    💵 የተከፈለ፦ <b style="color:#22c55e;">${(m.paid_amount || 0).toLocaleString()} ብር</b>
+                                </div>
                                 <div style="margin-top:8px;">${paidStatus}</div>
+                                <button class="btn-ref" onclick="copyReferralLink('${m.ref_no}')">🔗 የዚህ አካውንት ሪፈራል ሊንክ ኮፒ አድርግ</button>
                             </div>
                         `;
-                        selectAcc.innerHTML += `<option value="${m.id}">${m.first_name} (${m.ref_no})</option>`;
+                        selectAcc.innerHTML += `<option value="${m.id}">${m.first_name} - ${m.ref_no} (${m.share_count} ዕጣ)</option>`;
                     });
                 } else {
                     container.innerHTML = '<p style="text-align:center; color:#94a3b8; font-size:13px;">ምንም የተመዘገበ የዕቁብ አካውንት አልተገኘም።</p>';
@@ -276,6 +307,7 @@
         formData.append('share_count', document.getElementById('share_count').value);
         formData.append('cycle_amount', document.getElementById('cycle_amount').value);
         formData.append('payment_method', document.getElementById('payment_method').value);
+        formData.append('referred_by', refCode);
 
         const receiptInput = document.getElementById('receipt_file');
         if (receiptInput.files[0]) formData.append('receipt', receiptInput.files[0]);
@@ -284,6 +316,7 @@
             const response = await fetch('/api/register', { method: 'POST', body: formData });
             if (response.ok) {
                 alert('🎉 ምዝገባዎ ተጠናቅቋል! አድሚኑ ሲያጸድቀው በደብተርዎ ላይ ይታያል።');
+                generateRefNo();
                 loadUserData();
                 switchTab('tab-book');
             } else { alert('ምዝገባው አልተሳካም።'); }
@@ -310,6 +343,7 @@
                 alert('✅ ስክሪንሹቱ ለአድሚኑ ተልኳል!');
                 fileInput.value = '';
                 document.getElementById('weeklyFileName').innerText = 'ምንም ፋይል አልተመረጠም';
+                loadUserData();
             } else { alert('መላክ አልተሳካም'); }
         } catch (err) { alert('የኔትወርክ ስህተት!'); }
         finally { uploadBtn.disabled = false; uploadBtn.innerText = '📤 ስክሪንሹቱን ለአድሚን ላክ'; }
