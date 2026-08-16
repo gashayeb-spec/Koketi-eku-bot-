@@ -48,6 +48,7 @@
         .btn-success { background: var(--success); color: white; }
         .btn-secondary { background: #475569; color: white; }
         .btn-info { background: #0284c7; color: white; }
+        .btn-warning { background: #f59e0b; color: white; }
 
         /* Dashboard Header */
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
@@ -261,8 +262,13 @@
                         <option value="CLOSED" data-am="ተዘግቷል (CLOSED)" data-en="Closed (CLOSED)">ተዘግቷል (CLOSED)</option>
                     </select>
                 </div>
+                <!-- ➕ የተጨመረ፦ የከስተመር ሰፖርት ስልክ ቁጥር ማስገቢያ -->
+                <div class="input-group">
+                    <label data-am="የደንበኞች ድጋፍ ስልክ ቁጥር (Customer Support)" data-en="Customer Support Phone">የደንበኞች ድጋፍ ስልክ ቁጥር (Customer Support)</label>
+                    <input type="text" id="supportPhoneInput" placeholder="ምሳሌ፦ 0911223344" data-am-ph="ምሳሌ፦ 0911223344" data-en-ph="e.g. 0911223344">
+                </div>
             </div>
-            <button class="btn" style="margin-top: 10px;" onclick="saveRegistrationSettings()" data-am="የምዝገባ ገደብ አስተካክል" data-en="Save Registration Limits">የምዝገባ ገደብ አስተካክል</button>
+            <button class="btn" style="margin-top: 10px;" onclick="saveRegistrationSettings()" data-am="የምዝገባ ገደብ እና ስልክ አስተካክል" data-en="Save Settings">የምዝገባ ገደብ እና ስልክ አስተካክል</button>
             <button class="btn btn-danger" style="margin-top: 10px;" onclick="notifyUnpaidMembers()"><i class="fas fa-bell"></i> <span data-am="ያልከፈሉ አባላትን በቴሌግራም አሳስብ" data-en="Remind Unpaid Members via Telegram">ያልከፈሉ አባላትን በቴሌግራም አሳስብ</span></button>
         </div>
 
@@ -476,6 +482,10 @@
                     if(document.getElementById('botStatusSelect')) {
                         document.getElementById('botStatusSelect').value = data.settings.bot_status || 'ACTIVE';
                     }
+                    /* ➕ የተጨመረ፦ የተቀመጠውን ስልክ ቁጥር ማሳያ */
+                    if(document.getElementById('supportPhoneInput')) {
+                        document.getElementById('supportPhoneInput').value = data.settings.support_phone || '';
+                    }
                 }
 
                 const tbody = document.getElementById('membersTableBody');
@@ -507,8 +517,9 @@
                     const shareTxt = currentLanguage === 'am' ? 'ዕጣ' : 'share';
                     const editTxt = currentLanguage === 'am' ? '⚙️ ማስተካከያ' : '⚙️ Edit';
 
+                    /* 🛠️ ተስተካክሏል፦ 'ሰርቪስ' ወደ 'ካንሰል' ተቀይሯል */
                     const approveTxt = currentLanguage === 'am' ? 'አጽድቅ' : 'Approve';
-                    const serviceTxt = currentLanguage === 'am' ? 'ሰርቪስ' : 'Service';
+                    const cancelTxt = currentLanguage === 'am' ? 'ካንሰል' : 'Cancel';
                     const blockTxt = currentLanguage === 'am' ? 'አግድ' : 'Block';
 
                     const row = document.createElement('tr');
@@ -530,7 +541,8 @@
                         </td>
                         <td class="action-btns">
                             <button class="btn btn-success" style="padding: 4px 6px; font-size: 0.75rem;" onclick="changeStatus(${m.id}, 'Approved')" title="${approveTxt}">${approveTxt}</button>
-                            <button class="btn btn-info" style="padding: 4px 6px; font-size: 0.75rem;" onclick="changeStatus(${m.id}, 'Approved')" title="${serviceTxt}">${serviceTxt}</button>
+                            <!-- 🛠️ ተስተካክሏል፦ ወደ Cancelled የሚቀይር አዝራር -->
+                            <button class="btn btn-warning" style="padding: 4px 6px; font-size: 0.75rem; background: #f59e0b; color: white;" onclick="changeStatus(${m.id}, 'Cancelled')" title="${cancelTxt}">${cancelTxt}</button>
                             <button class="btn btn-danger" style="padding: 4px 6px; font-size: 0.75rem;" onclick="changeStatus(${m.id}, 'Blocked')" title="${blockTxt}">${blockTxt}</button>
                             <button class="btn btn-secondary" onclick="openMsgModal('${m.telegram_id}')" title="Send Message"><i class="fas fa-envelope"></i></button>
                             <button class="btn btn-danger" onclick="deleteMember(${m.id})" title="Delete"><i class="fas fa-trash"></i></button>
@@ -633,13 +645,15 @@
         async function saveRegistrationSettings() {
             const max_members = document.getElementById('maxMembersInput').value;
             const registration_status = document.getElementById('regStatusSelect').value;
+            /* ➕ የተጨመረ፦ የስልክ ቁጥሩን አብሮ መላኪያ */
+            const support_phone = document.getElementById('supportPhoneInput').value;
 
             const res = await fetch('/api/admin/update_registration_settings', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({max_members, registration_status})
+                body: JSON.stringify({max_members, registration_status, support_phone})
             });
-            if(res.ok) alert(currentLanguage === 'am' ? "የምዝገባ ገደቡ ተስተካክሏል!" : "Registration settings updated!");
+            if(res.ok) alert(currentLanguage === 'am' ? "የምዝገባ ገደቡ እና የስልክ ቁጥር መረጃው ተስተካክሏል!" : "Settings updated successfully!");
             loadAdminData();
         }
 
