@@ -12,11 +12,13 @@
     .btn { background-color: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 8px; }
     .btn-broadcast { background-color: #e11d48; margin-top: 10px; }
     .btn-unpaid { background-color: #f59e0b; color: #000; margin-top: 10px; }
+    .btn-toggle-reg { background-color: #0284c7; margin-top: 10px; }
     
     .btn-action { padding: 4px 8px; font-size: 11px; border-radius: 4px; border: none; color: white; cursor: pointer; margin-right: 2px; margin-bottom: 2px; }
     .btn-approve { background-color: #22c55e; }
     .btn-block { background-color: #f59e0b; color: #000; }
     .btn-cancel { background-color: #ef4444; }
+    .btn-erase { background-color: #dc2626; font-weight: bold; }
     .btn-guarantor { background-color: #0284c7; }
     .btn-msg { background-color: #8b5cf6; }
     .btn-paid { background-color: #22c55e; }
@@ -34,16 +36,49 @@
     .badge-cancelled { background-color: #64748b; color: #fff; padding: 2px 5px; border-radius: 4px; font-weight: bold; }
     .guarantor-info { color: #334155; background-color: #f8fafc; padding: 4px; border-radius: 4px; font-size: 10px; line-height: 1.3; }
 
-    /* Modal for Guarantor Info */
+    /* Modal for Guarantor Info & Login */
     .modal { display: none; position: fixed; z-index: 10; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); }
     .modal-content { background: #1e293b; margin: 10% auto; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; border: 1px solid #475569; }
+    
+    /* Login Screen Overlay */
+    #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; z-index: 999; display: flex; align-items: center; justify-content: center; }
+    .login-box { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; width: 90%; max-width: 320px; text-align: center; }
 </style>
 </head>
 <body>
 
+<!-- የይለፍ ቃል መጠየቂያ Login Screen -->
+<div id="loginOverlay">
+    <div class="login-box">
+        <h3 style="color:#38bdf8; margin-top:0;">🔒 የአድሚን መግቢያ</h3>
+        <p style="font-size:12px; color:#94a3b8;">እባክዎን የአድሚን ይለፍ ቃል ያስገቡ</p>
+        <input type="password" id="admin_password" placeholder="የይለፍ ቃል (Password)" style="text-align:center;">
+        <button class="btn" onclick="checkPassword()">ግባ (Login)</button>
+    </div>
+</div>
+
 <h2>⚙️ KOKETI የአድሚን መቆጣጠሪያ ፓናል</h2>
 
-<!-- 1. የሳምንት እና ዕጣ መቆጣጠሪያ -->
+<!-- 1. የምዝገባ ሁኔታ እና የሰው ብዛት ገደብ መቆጣጠሪያ -->
+<div class="card">
+    <h3>🛑 የምዝገባ ገደብ እና ሁኔታ መቆጣጠሪያ</h3>
+    <div class="grid">
+        <div>
+            <label>ከፍተኛ የአባላት ገደብ (Max Members)</label>
+            <input type="number" id="max_members_limit" placeholder="ለምሳሌ፡ 100">
+        </div>
+        <div>
+            <label>የምዝገባ ሁኔታ (Status)</label>
+            <select id="registration_status">
+                <option value="OPEN">ክፍት ነው (OPEN)</option>
+                <option value="CLOSED">ተዘግቷል (CLOSED)</option>
+            </select>
+        </div>
+    </div>
+    <button class="btn btn-toggle-reg" onclick="saveRegistrationSettings()">⚙️ የምዝገባ ገደብ አስተካክል</button>
+</div>
+
+<!-- 2. የሳምንት እና ዕጣ መቆጣጠሪያ -->
 <div class="card">
     <h3>🎲 የዕጣ፣ የሳምንትና የማስታወቂያ መቆጣጠሪያ</h3>
     <div class="grid">
@@ -71,7 +106,7 @@
     <button class="btn btn-broadcast" onclick="saveDraw(true)">📢 መዝግብና የከፈሉትን/ያልከፈሉትን ለአባላት በሙሉ አብስር</button>
 </div>
 
-<!-- 2. የአባላት ሙሉ ዝርዝር -->
+<!-- 3. የአባላት ሙሉ ዝርዝር -->
 <div class="card">
     <h3>👥 የአባላት መረጃ፣ የክፍያ ሁኔታና ዋስትና</h3>
     <div style="overflow-x:auto;">
@@ -113,6 +148,17 @@
 
 <script>
 let currentMembers = [];
+const DEFAULT_PASS = "1234"; // ነባር የአድሚን ፓስወርድ (እዚህ ጋር መቀየር ትችላለህ)
+
+function checkPassword() {
+    const input = document.getElementById('admin_password').value;
+    if(input === DEFAULT_PASS) {
+        document.getElementById('loginOverlay').style.display = 'none';
+        loadData();
+    } else {
+        alert('የተሳሳተ የይለፍ ቃል ነው!');
+    }
+}
 
 async function loadData() {
     const res = await fetch('/api/admin/members');
@@ -123,6 +169,10 @@ async function loadData() {
     document.getElementById('draw_date').value = data.settings.latest_draw_date || '';
     document.getElementById('current_week').value = data.settings.current_week || 1;
     document.getElementById('winner_name').value = data.settings.winner_name || '';
+
+    // የምዝገባ ገደብ እና ሁኔታ ማዘጋጃ
+    if(data.settings.max_members) document.getElementById('max_members_limit').value = data.settings.max_members;
+    if(data.settings.registration_status) document.getElementById('registration_status').value = data.settings.registration_status;
 
     const tbody = document.getElementById('membersTable');
     tbody.innerHTML = '';
@@ -158,6 +208,7 @@ async function loadData() {
                 <button class="btn-action btn-approve" onclick="changeStatus(${m.id}, 'Approved')">Approve</button>
                 <button class="btn-action btn-block" onclick="changeStatus(${m.id}, 'Blocked')">Block</button>
                 <button class="btn-action btn-cancel" onclick="changeStatus(${m.id}, 'Cancelled')">Cancel</button>
+                <button class="btn-action btn-erase" onclick="eraseMember(${m.id}, '${m.first_name}')">🗑️ ሰርዝ</button>
                 <button class="btn-action btn-msg" onclick="sendDirectMessage('${m.telegram_id}', '${m.first_name}')">📩 መልእክት</button>
             </td>
         `;
@@ -174,6 +225,31 @@ async function changeStatus(id, newStatus) {
         });
         loadData();
     }
+}
+
+// አባላትን ሰርቨር እና ዳታቤዝ ላይ ሙሉ በሙሉ የመሰረዝ (Erase) ፈንክሽን
+async function eraseMember(id, name) {
+    if(confirm(`እርግጠኛ ነዎት አባል [ ${name} ] ሙሉ በሙሉ ከመዝገብ እንዲሰረዝ ይፈልጋሉ? ይህ እርምጃ አይመለስም!`)) {
+        await fetch('/api/admin/delete_member/' + id, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        alert('አባሉ ሙሉ በሙሉ ተሰርዟል!');
+        loadData();
+    }
+}
+
+// የምዝገባ ገደብ እና ክፍት/ዝጉ ሁኔታ ማስቀመጫ
+async function saveRegistrationSettings() {
+    const limit = document.getElementById('max_members_limit').value;
+    const status = document.getElementById('registration_status').value;
+
+    await fetch('/api/admin/update_registration_settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ max_members: limit, registration_status: status })
+    });
+    alert('የምዝገባ ገደብ እና ሁኔታ ተስተካክሏል!');
 }
 
 function openGuarantorModal(id) {
@@ -271,8 +347,6 @@ async function saveDraw(shouldBroadcast) {
         loadData();
     }
 }
-
-loadData();
 </script>
 
 </body>
