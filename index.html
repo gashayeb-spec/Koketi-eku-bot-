@@ -17,6 +17,15 @@
     .btn-gps { background-color: #0284c7; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 12px; margin-top: 4px; width: 100%; }
     .btn-submit { background-color: #22c55e; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; margin-top: 15px; }
     .section-title { color: #f59e0b; font-size: 14px; border-bottom: 1px solid #334155; padding-bottom: 4px; margin-top: 20px; margin-bottom: 12px; font-weight: bold; }
+    
+    /* CLOSED Status Banner Style */
+    #closedNotice { display: none; text-align: center; padding: 25px 15px; }
+    #closedNotice h3 { color: #ef4444; margin-top: 0; font-size: 22px; }
+    #closedNotice p { color: #cbd5e1; font-size: 15px; line-height: 1.5; }
+    
+    .file-input-wrapper { background: #0f172a; border: 1px dashed #38bdf8; padding: 10px; border-radius: 8px; text-align: center; margin-top: 5px; }
+    .file-input-wrapper input[type=file] { display: none; }
+    .btn-file { background: #38bdf8; color: #0f172a; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; display: inline-block; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -25,6 +34,14 @@
     <h2>🍷 KOKETI KURT & LOUNGE</h2>
     <p class="sub">የዲጂታል ዕቁብ አባልነት መመዝገቢያ ፎርም</p>
 
+    <!-- ምዝገባ ሲዘጋ የሚታይ ማሳወቂያ -->
+    <div id="closedNotice">
+        <h3>🚫 የምዝገባ ሂደቱ ተጠናቋል!</h3>
+        <p>ለጊዜው ለዚህ ዙር የተያዘው የምዝገባ ቦታ ስለሞላ ወይም ስለተዘጋ አዳዲስ አባላትን መቀበል አይቻልም።</p>
+        <p style="font-size: 12px; color: #94a3b8;">ስለተከታተሉን እናመሰግናለን!</p>
+    </div>
+
+    <!-- ነባሩ የመመዝገቢያ ፎርም -->
     <form id="equbForm">
         <div class="form-group">
             <label>የመዝገብ/አባል ቁጥር (Ref No)*</label>
@@ -105,6 +122,17 @@
             </select>
         </div>
 
+        <!-- አዲስ የተጨመረ፦ የክፍያ ስክሪንሹት ማስገቢያ -->
+        <div class="section-title">🧾 የክፍያ ማረጋገጫ (Screenshot)</div>
+        <div class="form-group">
+            <label>የተከፈለበትን ደረሰኝ/ስክሪንሹት ይጫኑ (Proof of Payment)</label>
+            <div class="file-input-wrapper">
+                <label for="receipt_file" class="btn-file">📸 ስክሪንሹት ይምረጡ</label>
+                <input type="file" id="receipt_file" accept="image/*" onchange="updateFileName(this)">
+                <span id="fileName" style="display:block; font-size:11px; color:#cbd5e1; margin-top:5px;">ምንም ፋይል አልተመረጠም</span>
+            </div>
+        </div>
+
         <button type="submit" id="submitBtn" class="btn-submit">🚀 ምዝገባውን አጠናቅቅ</button>
     </form>
 </div>
@@ -131,6 +159,40 @@
         }
     }
 
+    function updateFileName(input) {
+        const fileNameSpan = document.getElementById('fileName');
+        if(input.files && input.files[0]) {
+            fileNameSpan.innerText = '✅ የተመረጠ ፋይል፦ ' + input.files[0].name;
+            fileNameSpan.style.color = '#22c55e';
+        } else {
+            fileNameSpan.innerText = 'ምንም ፋይል አልተመረጠም';
+            fileNameSpan.style.color = '#cbd5e1';
+        }
+    }
+
+    // ገጹ ሲከፈት የምዝገባ ሁኔታ መፈተሻ (Check Registration Status)
+    async function checkRegistrationStatus() {
+        try {
+            const res = await fetch('/api/admin/members');
+            if (res.ok) {
+                const data = await res.json();
+                const settings = data.settings || {};
+                const totalMembers = (data.members || []).length;
+                const maxMembers = parseInt(settings.max_members || 999999);
+                const regStatus = settings.registration_status || 'OPEN';
+
+                // CLOSED ከተባለ ወይም የሰው ብዛት Limit ከተሞላ ፎርሙን ደብቆ ማሳወቂያ ማሳየት
+                if (regStatus === 'CLOSED' || totalMembers >= maxMembers) {
+                    document.getElementById('equbForm').style.display = 'none';
+                    document.getElementById('closedNotice').style.display = 'block';
+                }
+            }
+        } catch (e) {
+            console.log('Status check fetch error', e);
+        }
+    }
+    checkRegistrationStatus();
+
     document.getElementById('equbForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
@@ -140,25 +202,29 @@
 
         const telegram_id = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : '';
 
-        const formData = {
-            ref_no: document.getElementById('ref_no').value,
-            telegram_id: telegram_id,
-            first_name: document.getElementById('first_name').value,
-            father_name: document.getElementById('father_name').value,
-            grand_name: document.getElementById('grand_name').value,
-            phone_number: document.getElementById('phone_number').value,
-            region_select: document.getElementById('region_select').value,
-            gps_location: document.getElementById('gps_location').value,
-            share_count: parseInt(document.getElementById('share_count').value),
-            cycle_amount: parseFloat(document.getElementById('cycle_amount').value),
-            payment_method: document.getElementById('payment_method').value
-        };
+        // Form Data መልኩን ለፋይል እና መረጃ አዘጋጅቶ መላኪያ
+        const formDataPayload = new FormData();
+        formDataPayload.append('ref_no', document.getElementById('ref_no').value);
+        formDataPayload.append('telegram_id', telegram_id);
+        formDataPayload.append('first_name', document.getElementById('first_name').value);
+        formDataPayload.append('father_name', document.getElementById('father_name').value);
+        formDataPayload.append('grand_name', document.getElementById('grand_name').value);
+        formDataPayload.append('phone_number', document.getElementById('phone_number').value);
+        formDataPayload.append('region_select', document.getElementById('region_select').value);
+        formDataPayload.append('gps_location', document.getElementById('gps_location').value);
+        formDataPayload.append('share_count', document.getElementById('share_count').value);
+        formDataPayload.append('cycle_amount', document.getElementById('cycle_amount').value);
+        formDataPayload.append('payment_method', document.getElementById('payment_method').value);
+
+        const receiptInput = document.getElementById('receipt_file');
+        if (receiptInput.files[0]) {
+            formDataPayload.append('receipt', receiptInput.files[0]);
+        }
 
         try {
             const response = await fetch('/api/register', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: formDataPayload
             });
 
             if (response.ok) {
