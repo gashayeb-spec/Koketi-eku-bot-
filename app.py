@@ -4,6 +4,7 @@ import json
 import requests
 import re
 import random
+import time
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
@@ -552,6 +553,43 @@ def update_draw():
 
     conn.close()
     return jsonify({"status": "success"})
+
+# --- አዲስ የተጨመረው የብሮድካስት ኤንድፖይንት (Broadcast Endpoint) ---
+@app.route('/api/admin/broadcast_announcement', methods=['POST'])
+def broadcast_announcement():
+    data = request.json or {}
+    message = data.get('message', '').strip()
+
+    if not message:
+        return jsonify({"status": "error", "message": "እባክዎን የሚላከውን መልእክት ያስገቡ!"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # የቴሌግራም ID ያላቸውን የተፈቀዱ (Approved) አባላት ብቻ ማውጣት
+    cursor.execute("SELECT DISTINCT telegram_id FROM equb_members WHERE status='Approved' AND telegram_id IS NOT NULL AND telegram_id != ''")
+    members = cursor.fetchall()
+    conn.close()
+
+    if not members:
+        return jsonify({"status": "error", "message": "መልእክት የሚላክላቸው የተመዘገቡ አባላት አልተገኙም!"}), 404
+
+    formatted_msg = f"📢 <b>የአድሚን ማስታወቂያ፦</b>\n\n{message}"
+    sent_count = 0
+
+    for m in members:
+        try:
+            res = send_telegram_message(m['telegram_id'], formatted_msg)
+            if res and res.get('ok'):
+                sent_count += 1
+            time.sleep(0.05) # Rate limit ለመከላከል
+        except Exception as e:
+            print(f"Failed to send broadcast to {m['telegram_id']}: {e}")
+
+    return jsonify({
+        "status": "success",
+        "message": f"ማስታወቂያው ለ {sent_count} አባላት በስኬት ተላክ!",
+        "sent_count": sent_count
+    }), 200
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
