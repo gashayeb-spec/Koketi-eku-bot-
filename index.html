@@ -3,226 +3,151 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KOKETI KURT & LOUNGE - የዕቁብ መመዝገቢያ</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<title>KOKETI - የአድሚን መቆጣጠሪያ</title>
 <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #0b1f36; display: flex; justify-content: center; padding: 15px; margin: 0; }
-    .form-container { background-color: #ffffff; width: 100%; max-width: 450px; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-    .header { text-align: center; margin-bottom: 20px; border-bottom: 3px double #0b2545; padding-bottom: 10px; }
-    .header h2 { margin: 0; font-size: 20px; color: #0b2545; font-weight: 800; }
-    .header .subtitle { margin: 4px 0 0 0; font-size: 14px; color: #d93025; font-weight: bold; }
-    
-    .section-title { background-color: #f0f4f8; color: #0b2545; padding: 8px; font-weight: bold; font-size: 13px; margin: 15px 0 10px 0; border-left: 4px solid #0b2545; border-radius: 0 4px 4px 0; }
-    .admin-badge { background-color: #d93025; color: white; padding: 2px 6px; font-size: 10px; border-radius: 3px; margin-left: 5px; }
-
-    .form-group { margin-bottom: 12px; }
-    label { display: block; font-weight: 700; font-size: 13px; color: #111; margin-bottom: 5px; }
-    input[type="text"], input[type="number"], input[type="tel"], select { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
-    
-    input[readonly] { background-color: #e9ecef; color: #495057; cursor: not-allowed; font-weight: bold; }
-
-    .phone-group { display: flex; gap: 8px; }
-    .phone-group select { width: 30%; }
-    .phone-group input { width: 70%; }
-    
-    .row-group { display: flex; gap: 8px; }
-    .row-group .form-group { flex: 1; }
-
-    .geo-btn { background-color: #28a745; color: white; border: none; padding: 8px 10px; font-size: 12px; border-radius: 4px; cursor: pointer; margin-bottom: 6px; font-weight: bold; width: 100%; }
-
-    .submit-btn { width: 100%; padding: 12px; background-color: #0b2545; color: white; border: none; border-radius: 4px; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 10px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 15px; margin: 0; }
+    h2 { color: #38bdf8; text-align: center; margin-bottom: 20px; }
+    .card { background-color: #1e293b; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #334155; }
+    .card h3 { margin-top: 0; color: #f1f5f9; border-bottom: 1px solid #334155; padding-bottom: 8px; font-size: 16px; }
+    .btn { background-color: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 8px; }
+    .btn-broadcast { background-color: #e11d48; margin-top: 10px; }
+    .btn-approve { background-color: #3b82f6; padding: 5px 10px; width: auto; font-size: 12px; }
+    input, select { padding: 9px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; width: 100%; box-sizing: border-box; margin-bottom: 10px; font-size: 13px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+    th, td { border: 1px solid #334155; padding: 8px; text-align: left; }
+    th { background-color: #0f172a; color: #94a3b8; }
+    .badge-pending { background-color: #f59e0b; color: #000; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    .badge-approved { background-color: #22c55e; color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    .guarantor-info { color: #cbd5e1; font-size: 10px; line-height: 1.3; }
 </style>
 </head>
 <body>
 
-<div class="form-container">
-    <div class="header">
-        <h2>KOKETI KURT & LOUNGE</h2>
-        <div class="subtitle">ዲጂታል የዕቁብና ዋስትና መቆጣጠሪያ</div>
+<h2>⚙️ KOKETI የአድሚን ዳሽቦርድ</h2>
+
+<!-- 1. የሳምንት እና ዕጣ መቆጣጠሪያ -->
+<div class="card">
+    <h3>🎲 የዕጣ እና ማስታወቂያ መቆጣጠሪያ (Draw Control)</h3>
+    <div class="grid">
+        <div>
+            <label>ስንተኛው ሳምንት</label>
+            <input type="number" id="current_week" placeholder="ምሳሌ፦ 1">
+        </div>
+        <div>
+            <label>የወጣው ዕጣ ቁጥር</label>
+            <input type="text" id="draw_number" placeholder="ምሳሌ፦ KOK-4821">
+        </div>
     </div>
-    
-    <form id="equbForm">
-        <div class="form-group">
-            <label>የመዝገብ ቁጥር (Ref No.)</label>
-            <input type="text" id="ref_no" name="ref_no" readonly>
+    <div class="grid">
+        <div>
+            <label>የዕጣው ባለቤት (አሸናፊ)</label>
+            <input type="text" id="winner_name" placeholder="የባለዕጣው ስም">
         </div>
+        <div>
+            <label>ዕጣ የወጣበት ቀን</label>
+            <input type="text" id="draw_date" placeholder="ምሳሌ፦ ነሐሴ 10">
+        </div>
+    </div>
+    <button class="btn" onclick="saveDraw(false)">💾 መረጃውን ብቻ መዝግብ</button>
+    <button class="btn btn-broadcast" onclick="saveDraw(true)">📢 መዝግብና ለአባላት በሙሉ አብስር (Broadcast)</button>
+</div>
 
-        <div class="section-title">፩. የዕቁብተኛው መረጃ (Member Info)</div>
-        
-        <div class="row-group">
-            <div class="form-group">
-                <label>የራስ ስም</label>
-                <input type="text" id="first_name" name="first_name" placeholder="ስም" required>
-            </div>
-            <div class="form-group">
-                <label>የአባት ስም</label>
-                <input type="text" id="father_name" name="father_name" placeholder="አባት" required>
-            </div>
-            <div class="form-group">
-                <label>የአያት ስም</label>
-                <input type="text" id="grand_name" name="grand_name" placeholder="አያት" required>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>ስልክ ቁጥር</label>
-            <div class="phone-group">
-                <select name="country_code"><option value="+251">+251</option></select>
-                <input type="tel" id="phone_number" name="phone_number" placeholder="912345678" required>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>ያሉበት አካባቢ</label>
-            <button type="button" class="geo-btn" onclick="getLocation()">📍 ቦታዎን በGPS ፈልግ</button>
-            <input type="text" id="gps_location" name="gps_location" placeholder="ጂፒኤስ አድራሻ" readonly style="margin-bottom: 6px;">
-            
-            <select id="region_select" name="region_select" required>
-                <option value="">-- ክልል/ከተማ ይምረጡ --</option>
-                <option value="Sidama" selected>ሲዳማ (ሀዋሳ...)</option>
-                <option value="Addis Ababa">አዲስ አበባ</option>
-                <option value="Oromia">ኦሮሚያ</option>
-                <option value="Amhara">አማራ</option>
-                <option value="South Ethiopia">ደቡብ ኢትዮጵያ</option>
-                <option value="Central Ethiopia">ማዕከላዊ ኢትዮጵያ</option>
-                <option value="Dire Dawa">ድሬዳዋ</option>
-                <option value="Harari">ሐረሪ</option>
-                <option value="Tigray">ትግራይ</option>
-            </select>
-        </div>
-
-        <div class="section-title">፪. የዕቁብና የክፍያ ሁኔታ</div>
-        
-        <div class="form-group">
-            <label>የክፍያ አማራጭ (Payment Method)</label>
-            <select id="payment_method" name="payment_method" required>
-                <option value="">-- የክፍያ መንገድ ይምረጡ --</option>
-                <option value="Cash">በጥሬ ገንዘብ (Cash)</option>
-                <option value="Telebirr">ቴሌብር (telebirr)</option>
-                <option value="CBE">የኢትዮጵያ ንግድ ባንክ (CBE)</option>
-                <option value="Dashen Bank">ዳሽን ባንክ (Dashen Bank)</option>
-                <option value="Bank of Abyssinia">አቢሲንያ ባንክ (Abyssinia)</option>
-                <option value="Awash Bank">አዋሽ ባንክ (Awash Bank)</option>
-                <option value="Other Bank">ሌላ ባንክ</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>የዕቁብ ዙር መጠን</label>
-            <select id="cycle_amount" name="cycle_amount" required>
-                <option value="">-- የብር መጠን ይምረጡ --</option>
-                <option value="10000">10,000 ብር</option>
-                <option value="20000">20,000 ብር</option>
-                <option value="30000">30,000 ብር</option>
-                <option value="50000">50,000 ብር</option>
-                <option value="100000">100,000 ብር</option>
-            </select>
-        </div>
-
-        <div class="row-group">
-            <div class="form-group">
-                <label>እስካሁን የጣለው</label>
-                <input type="number" id="paid_amount" name="paid_amount" placeholder="ብር" min="0" required>
-            </div>
-            <div class="form-group">
-                <label>ቀሪ እዳ</label>
-                <input type="number" id="remaining_due" name="remaining_due" placeholder="በራሱ ይሰላል" readonly>
-            </div>
-        </div>
-
-        <div class="section-title">፫. የዋስትና መረጃ <span class="admin-badge">የምስጢር</span></div>
-        <div class="form-group">
-            <label>የእቁብተኛው የቼክ ቁጥር</label>
-            <input type="text" id="member_cheque" name="member_cheque" placeholder="እቁብ ሲወጣ የሚገባ">
-        </div>
-        <div class="form-group">
-            <label>የዋስ ሙሉ ስም</label>
-            <input type="text" id="guarantor_name" name="guarantor_name" placeholder="የዋስ ስም">
-        </div>
-        <div class="row-group">
-            <div class="form-group">
-                <label>የዋስ ቼክ</label>
-                <input type="text" id="guarantor_cheque" name="guarantor_cheque" placeholder="የዋስ ቼክ">
-            </div>
-            <div class="form-group">
-                <label>የዋስትና ንብረት</label>
-                <input type="text" id="collateral_item" name="collateral_item" placeholder="መኪና/ቤት">
-            </div>
-        </div>
-
-        <button type="submit" class="submit-btn" id="submitBtn">መረጃውን መዝግብ</button>
-    </form>
+<!-- 2. የአባላት ሙሉ ዝርዝርና የዋስትና መረጃ -->
+<div class="card">
+    <h3>👥 የአባላት ሙሉ መረጃና ዋስትና (ለአድሚን ብቻ)</h3>
+    <div style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Ref No</th>
+                    <th>ስም & ስልክ</th>
+                    <th>ዕጣ</th>
+                    <th>ዙር (ብር)</th>
+                    <th>የዋስትና መረጃ (ቼክ/ዋስ/ንብረት)</th>
+                    <th>ሁኔታ</th>
+                    <th>እርምጃ</th>
+                </tr>
+            </thead>
+            <tbody id="membersTable">
+                <tr><td colspan="7">መረጃ በመጫን ላይ...</td></tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
+async function loadData() {
+    const res = await fetch('/api/admin/members');
+    const data = await res.json();
+    
+    document.getElementById('draw_number').value = data.settings.latest_draw_number || '';
+    document.getElementById('draw_date').value = data.settings.latest_draw_date || '';
+    document.getElementById('current_week').value = data.settings.current_week || 1;
+    document.getElementById('winner_name').value = data.settings.winner_name || '';
 
-    document.getElementById('ref_no').value = 'KOK-' + Math.floor(1000 + Math.random() * 9000);
+    const tbody = document.getElementById('membersTable');
+    tbody.innerHTML = '';
 
-    function getLocation() {
-        const gpsInput = document.getElementById('gps_location');
-        if (navigator.geolocation) {
-            gpsInput.value = "ቦታ በመፈለግ ላይ...";
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    gpsInput.value = `Lat: ${pos.coords.latitude.toFixed(4)}, Lon: ${pos.coords.longitude.toFixed(4)}`;
-                },
-                () => { alert("GPS መረጃ ማግኘት አልተቻለም።"); gpsInput.value = ""; }
-            );
-        }
-    }
-
-    const cycleSelect = document.getElementById('cycle_amount');
-    const paidInput = document.getElementById('paid_amount');
-    const remainingInput = document.getElementById('remaining_due');
-
-    function calculateRemaining() {
-        const total = parseFloat(cycleSelect.value) || 0;
-        const paid = parseFloat(paidInput.value) || 0;
-        remainingInput.value = (total - paid) >= 0 ? (total - paid) : 0;
-    }
-
-    cycleSelect.addEventListener('change', calculateRemaining);
-    paidInput.addEventListener('input', calculateRemaining);
-
-    document.getElementById('equbForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const submitBtn = document.getElementById('submitBtn');
-        submitBtn.disabled = true;
-        submitBtn.innerText = "በመመዝገብ ላይ...";
-
-        const formData = new FormData(this);
-        const data = Object.fromEntries(formData.entries());
-
-        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-            data.telegram_id = tg.initDataUnsafe.user.id;
-        }
-
-        try {
-            const response = await fetch('/api/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                alert(result.message);
-                tg.close();
-            } else {
-                alert("ስህተት: " + result.message);
-                submitBtn.disabled = false;
-                submitBtn.innerText = "መረጃውን መዝግብ";
-            }
-        } catch (error) {
-            alert("ከሰርቨር ጋር መገናኘት አልተቻለም!");
-            submitBtn.disabled = false;
-            submitBtn.innerText = "መረጃውን መዝግብ";
-        }
+    data.members.forEach(m => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><b>${m.ref_no}</b></td>
+            <td>${m.first_name} ${m.father_name}<br><small>${m.phone_number}</small></td>
+            <td><b>${m.share_count || 1}</b> ዕጣ</td>
+            <td>${m.cycle_amount}</td>
+            <td class="guarantor-info">
+                <b>ቼክ:</b> ${m.member_cheque || '-'}<br>
+                <b>ዋስ:</b> ${m.guarantor_name || '-'}<br>
+                <b>የዋስ ቼክ:</b> ${m.guarantor_cheque || '-'}<br>
+                <b>ንብረት:</b> ${m.collateral_item || '-'}
+            </td>
+            <td><span class="${m.status === 'Pending' ? 'badge-pending' : 'badge-approved'}">${m.status}</span></td>
+            <td>
+                ${m.status === 'Pending' ? `<button class="btn btn-approve" onclick="approveMember(${m.id})">Approve</button>` : '✓ የጸደቀ'}
+            </td>
+        `;
+        tbody.appendChild(row);
     });
+}
+
+async function approveMember(id) {
+    if(confirm('ይህንን አባል ማረጋገጥ ይፈልጋሉ?')) {
+        await fetch('/api/admin/approve/' + id, { method: 'POST' });
+        loadData();
+    }
+}
+
+async function saveDraw(shouldBroadcast) {
+    const num = document.getElementById('draw_number').value;
+    const date = document.getElementById('draw_date').value;
+    const week = document.getElementById('current_week').value;
+    const winner = document.getElementById('winner_name').value;
+
+    if (shouldBroadcast && !confirm('የወጣውን ዕጣ መረጃ ለሁሉም አባላት በቴሌግራም መላክ ይፈልጋሉ?')) {
+        return;
+    }
+
+    const res = await fetch('/api/admin/update_draw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            draw_number: num, 
+            draw_date: date, 
+            current_week: week, 
+            winner_name: winner,
+            broadcast: shouldBroadcast 
+        })
+    });
+
+    if (res.ok) {
+        alert(shouldBroadcast ? 'ማስታወቂያው ለሁሉም አባላት ተበትኗል!' : 'መረጃው በስኬት ተመዝግቧል!');
+        loadData();
+    }
+}
+
+loadData();
 </script>
+
 </body>
 </html>
