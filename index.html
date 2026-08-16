@@ -82,6 +82,11 @@
             <p>ዲጂታል የዕቁብ መዝገብና የደብተር አገልግሎት</p>
         </div>
 
+        <!-- ➕ የደንበኞች ድጋፍ ስልክ ቁጥር ማሳያ ሳጥን -->
+        <div id="supportPhoneBox" class="alert alert-info" style="display: none; text-align: center; font-weight: bold; margin-bottom: 15px;">
+            <i class="fas fa-headset"></i> የደንበኞች ድጋፍ ስልክ፦ <span id="displaySupportPhone" style="color: var(--gold);"></span>
+        </div>
+
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('dashboardTab')"><i class="fas fa-book-open"></i> የኔ ደብተር</button>
             <button class="tab-btn" onclick="switchTab('registerTab')"><i class="fas fa-user-plus"></i> አዲስ ምዝገባ</button>
@@ -229,15 +234,33 @@
                 const res = await fetch(`/api/member_info/${telegramId}`);
                 const data = await res.json();
 
-                // Set Draw Info
+                // Set Draw Info & Admin Dynamic Settings
                 if(data.settings) {
                     document.getElementById('latestDrawNum').innerText = data.settings.latest_draw_number || 'አልወጣም';
                     document.getElementById('latestWinner').innerText = data.settings.winner_name || '-';
                     document.getElementById('latestDrawDate').innerText = data.settings.latest_draw_date || '-';
 
-                    if(data.settings.registration_status === 'CLOSED') {
-                        document.getElementById('regBtn').disabled = true;
-                        document.getElementById('regBtn').innerText = "ምዝገባ ለጊዜው ተዘግቷል";
+                    // 1. የድጋፍ ስልክ ቁጥር ማሳያ
+                    if(data.settings.support_phone) {
+                        document.getElementById('displaySupportPhone').innerText = data.settings.support_phone;
+                        document.getElementById('supportPhoneBox').style.display = 'block';
+                    }
+
+                    // 2. የምዝገባ ሁኔታ እና የገደብ (Max Members) ቼክ
+                    const totalReg = data.stats ? data.stats.total_registered : (data.members ? data.members.length : 0);
+                    const maxLimit = parseInt(data.settings.max_members) || 0;
+
+                    if(data.settings.registration_status === 'CLOSED' || (maxLimit > 0 && totalReg >= maxLimit)) {
+                        const regBtn = document.getElementById('regBtn');
+                        const alertBox = document.getElementById('regStatusAlert');
+                        
+                        regBtn.disabled = true;
+                        regBtn.innerText = "ምዝገባ ለጊዜው ተዘግቷል";
+
+                        alertBox.style.display = 'block';
+                        alertBox.innerText = data.settings.registration_status === 'CLOSED' 
+                            ? "⚠️ የምዝገባ ጊዜ ተጠናቋል/ተዘግቷል።" 
+                            : "⚠️ የተፈቀደው የአባላት ብዛት ገደብ ስለሞላ ምዝገባ ተዘግቷል።";
                     }
                 }
 
