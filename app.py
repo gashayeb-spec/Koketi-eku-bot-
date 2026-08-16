@@ -13,8 +13,8 @@ UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"  # <-- እዚህ ላይ የቦትህን Token ተካ
-ADMIN_CHAT_ID = "YOUR_ADMIN_CHAT_ID"    # <-- እዚህ ላይ የአድሚኑን Telegram Chat ID ተካ
+BOT_TOKEN = "8932085001:AAFSuqyjALyhumCO-Y6RwfHlwz1HJaugevU"  # <--  እዚህ ላይ የቦትህን Token ተካ
+ADMIN_CHAT_ID = "5351353727"    # <-- እዚህ ላይ የአድሚኑን Telegram Chat ID ተካ
 WEBAPP_URL = "https://your-domain.com"  # <-- እዚህ ላይ የዌብሳይትህን አድራሻ (Domain/Render/ngrok URL) ተካ
 DATABASE = 'database.db'
 
