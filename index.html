@@ -91,7 +91,22 @@
             </select>
         </div>
 
-        <div class="section-title">፪. የዕቁብ የገንዘብ ሁኔታ</div>
+        <div class="section-title">፪. የዕቁብና የክፍያ ሁኔታ</div>
+        
+        <div class="form-group">
+            <label>የክፍያ አማራጭ (Payment Method)</label>
+            <select id="payment_method" name="payment_method" required>
+                <option value="">-- የክፍያ መንገድ ይምረጡ --</option>
+                <option value="Cash">በጥሬ ገንዘብ (Cash)</option>
+                <option value="Telebirr">ቴሌብር (telebirr)</option>
+                <option value="CBE">የኢትዮጵያ ንግድ ባንክ (CBE)</option>
+                <option value="Dashen Bank">ዳሽን ባንክ (Dashen Bank)</option>
+                <option value="Bank of Abyssinia">አቢሲንያ ባንክ (Abyssinia)</option>
+                <option value="Awash Bank">አዋሽ ባንክ (Awash Bank)</option>
+                <option value="Other Bank">ሌላ ባንክ</option>
+            </select>
+        </div>
+
         <div class="form-group">
             <label>የዕቁብ ዙር መጠን</label>
             <select id="cycle_amount" name="cycle_amount" required>
@@ -103,6 +118,7 @@
                 <option value="100000">100,000 ብር</option>
             </select>
         </div>
+
         <div class="row-group">
             <div class="form-group">
                 <label>እስካሁን የጣለው</label>
@@ -114,7 +130,7 @@
             </div>
         </div>
 
-        <div class="section-title">፫. የዋስትና መረጃ <span class="admin-badge">ለአድሚን</span></div>
+        <div class="section-title">፫. የዋስትና መረጃ <span class="admin-badge">የምስጢር</span></div>
         <div class="form-group">
             <label>የእቁብተኛው የቼክ ቁጥር</label>
             <input type="text" id="member_cheque" name="member_cheque" placeholder="እቁብ ሲወጣ የሚገባ">
