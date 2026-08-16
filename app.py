@@ -15,6 +15,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"  # <-- እዚህ ላይ የቦትህን Token ተካ
 ADMIN_CHAT_ID = "YOUR_ADMIN_CHAT_ID"    # <-- እዚህ ላይ የአድሚኑን Telegram Chat ID ተካ
+WEBAPP_URL = "https://your-domain.com"  # <-- እዚህ ላይ የዌብሳይትህን አድራሻ (Domain/Render/ngrok URL) ተካ
 DATABASE = 'database.db'
 
 # ================= Database Initialization =================
@@ -69,7 +70,6 @@ def init_db():
         )
     ''')
 
-    # Default settings row
     cursor.execute('''
         INSERT OR IGNORE INTO settings (id, admin_password, max_members, registration_status, current_week)
         VALUES (1, 'Koketi2026@', 100, 'OPEN', 1)
@@ -184,7 +184,6 @@ def register():
     conn.commit()
     conn.close()
 
-    # Admin Notification with Approve & Reject Inline Buttons
     caption = f"<b>📝 አዲስ የምዝገባ ማመልከቻ!</b>\n\n" \
               f"👤 <b>ስም:</b> {first_name} {father_name}\n" \
               f"📌 <b>Ref No:</b> {ref_no}\n" \
@@ -230,12 +229,10 @@ def upload_weekly_receipt():
     photo_path = os.path.join(app.config['UPLOAD_FOLDER'], receipt_filename)
     receipt.save(photo_path)
 
-    # Temporary update receipt path
     cursor.execute('UPDATE members SET receipt_path = ? WHERE id = ?', (receipt_filename, member_id))
     conn.commit()
     conn.close()
 
-    # Admin Notification with Approve & Reject Inline Buttons
     caption = f"<b>🧾 አዲስ ሳምንታዊ የክፍያ ስክሪንሹት!</b>\n\n" \
               f"👤 <b>ስም:</b> {member['first_name']} {member['father_name']}\n" \
               f"📌 <b>Ref No:</b> {member['ref_no']}\n" \
@@ -336,7 +333,6 @@ def change_status(member_id):
         cursor.execute('UPDATE members SET status = ? WHERE id = ?', (new_status, member_id))
         conn.commit()
         
-        # Idempotency Check & Telegram Notification
         if new_status == 'Approved' and member['telegram_id']:
             send_telegram_msg(member['telegram_id'], f"🎉 <b>እንኳን ደስ አለዎት!</b>\n\nበ KOKETI ዕቁብ የ Ref No: <b>{member['ref_no']}</b> አካውንትዎ በአድሚኑ ጸድቋል!")
         elif new_status in ['Blocked', 'Cancelled'] and member['telegram_id']:
@@ -364,13 +360,11 @@ def toggle_payment(member_id):
         single_cycle_total = member['cycle_amount'] * member['share_count']
         
         if weekly_paid_status == 1 and member['weekly_paid_status'] == 0:
-            # Idempotency check: increase paid amount only once
             new_paid = member['paid_amount'] + single_cycle_total
             cursor.execute('UPDATE members SET weekly_paid_status = 1, paid_amount = ? WHERE id = ?', (new_paid, member_id))
             if member['telegram_id']:
                 send_telegram_msg(member['telegram_id'], f"✅ <b>የክፍያ ማረጋገጫ!</b>\n\nለ Ref No: <b>{member['ref_no']}</b> የዚህ ሳምንት ክፍያ በስኬት ተረጋግጧል!")
         elif weekly_paid_status == 0 and member['weekly_paid_status'] == 1:
-            # Revert payment strictly by Ref No cycle total
             new_paid = max(0, member['paid_amount'] - single_cycle_total)
             cursor.execute('UPDATE members SET weekly_paid_status = 0, paid_amount = ? WHERE id = ?', (new_paid, member_id))
 
@@ -430,7 +424,6 @@ def update_draw():
     ''', (data.get('draw_number'), data.get('draw_date'), data.get('current_week'), data.get('winner_name')))
 
     if data.get('broadcast'):
-        # Reset all weekly paid statuses for the new week broadcast
         members = cursor.execute("SELECT * FROM members WHERE status = 'Approved'").fetchall()
         
         draw_msg = f"📢 <b>የ KOKETI ዕቁብ ማስታወቂያ (ሳምንት {data.get('current_week')})!</b>\n\n" \
@@ -443,7 +436,6 @@ def update_draw():
             if m['telegram_id']:
                 send_telegram_msg(m['telegram_id'], draw_msg)
         
-        # Reset weekly payment status for the next cycle
         cursor.execute("UPDATE members SET weekly_paid_status = 0")
 
     conn.commit()
@@ -454,17 +446,44 @@ def update_draw():
 def send_direct_msg():
     data = request.json
     send_telegram_msg(data.get('telegram_id'), f"📩 <b>ከአድሚኑ የተላከ መልእክት፦</b>\n\n{data.get('message')}")
-    return jsonify({'message': 'መልእክቱ ተልኳል!'})
+    return jsonify({'message': 'መልእክቱ ተልቋል!'})
 
-# ================= Telegram Webhook / Callback Handler =================
+# ================= Telegram Webhook / Message & Callback Handler =================
 @app.route('/telegram_webhook', methods=['POST'])
 def telegram_webhook():
     data = request.json
-    if "callback_query" in data:
+    
+    # 1. Handle Messages (including /start command)
+    if "message" in data:
+        msg = data["message"]
+        chat_id = msg["chat"]["id"]
+        text = msg.get("text", "")
+
+        if text.startswith("/start"):
+            ref_code = "-"
+            parts = text.split()
+            if len(parts) > 1 and parts[1].startswith("ref_"):
+                ref_code = parts[1].replace("ref_", "")
+
+            welcome_text = "<b>🍷 እንኳን ወደ KOKETI KURT & LOUNGE የዲጂታል ዕቁብ ቦት በደህና መጡ!</b>\n\n" \
+                           "እባክዎን ከታች ያለውን <b>'📱 የዕቁብ ገጽ ክፈት'</b> የሚለውን ባተን በመጫን ይመዝገቡ ወይም የዕቁብ ደብተርዎን ይመልከቱ።"
+
+            webapp_link = f"{WEBAPP_URL}/?ref={ref_code}" if ref_code != "-" else WEBAPP_URL
+
+            reply_markup = {
+                "inline_keyboard": [
+                    [
+                        {"text": "📱 የዕቁብ ገጽ ክፈት (Open WebApp)", "web_app": {"url": webapp_link}}
+                    ]
+                ]
+            }
+            send_telegram_msg(chat_id, welcome_text, reply_markup)
+
+    # 2. Handle Inline Button Callbacks (Approve / Reject)
+    elif "callback_query" in data:
         cb = data["callback_query"]
         cb_id = cb["id"]
         cb_data = cb["data"]
-        from_id = cb["from"]["id"]
 
         conn = get_db()
         cursor = conn.cursor()
@@ -514,9 +533,7 @@ def telegram_webhook():
                     send_telegram_msg(m['telegram_id'], f"❌ <b>የክፍያ ውድቅ ማሳወቂያ!</b>\n\nለ Ref No: <b>{m['ref_no']}</b> የላኩት ስክሪንሹት ተቀባይነት አላገኘም። እባክዎን ትክክለኛውን ደረሰኝ እንደገና ይላኩ።")
 
         conn.close()
-
-        # Answer Telegram Callback Query
-        requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery", json={"callback_query_id": cb_id})
+        requests.post(f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery", json={"callback_query_id": cb_id})
 
     return "OK", 200
 
