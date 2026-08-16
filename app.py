@@ -142,19 +142,19 @@ def is_strong_password(password):
         return False
     return True
 
-# Persistent Reply Keyboard Generator for Registered Members
+# Persistent Reply Keyboard Generator (የተቀነሰ ናቪጌሽን)
 def get_persistent_reply_keyboard(is_admin=False):
-    keyboard = {
-        "keyboard": [
-            [{"text": "📖 የዕቁብ ደብተር"}, {"text": "🎲 የሳምንቱ ዕጣ"}],
-            [{"text": "💳 ሳምንታዊ ክፍያ ፈፅም"}, {"text": "📞 ድጋፍ / አድሚን"}]
-        ],
+    keyboard_buttons = [
+        [{"text": "💳 ሳምንታዊ ክፍያ ፈፅም"}]
+    ]
+    if is_admin:
+        keyboard_buttons.append([{"text": "⚙️ የአድሚን መቆጣጠሪያ ፓናል"}])
+        
+    return {
+        "keyboard": keyboard_buttons,
         "resize_keyboard": True,
         "is_persistent": True
     }
-    if is_admin:
-        keyboard["keyboard"].append([{"text": "⚙️ የአድሚን መቆጣጠሪያ ፓናል"}])
-    return keyboard
 
 def send_telegram_message(chat_id, text, reply_markup=None):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
@@ -292,7 +292,6 @@ def webhook():
             requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery", json={"callback_query_id": cb_id, "text": "አባሉ ታግዷል!"})
 
         elif cb_data.startswith("approve_pay_"):
-            # Format: approve_pay_<tx_id> or approve_pay_<member_id>
             raw_id = cb_data.replace("approve_pay_", "")
             tx_row = None
             if raw_id.isdigit():
@@ -346,7 +345,7 @@ def webhook():
         is_admin = (chat_id == str(ADMIN_ID))
         p_key = get_persistent_reply_keyboard(is_admin)
 
-        if text.startswith("/start") or text == "📖 የዕቁብ ደብተር":
+        if text.startswith("/start"):
             if members:
                 msg = f"📖 <b>የ KOKETI ዕቁብ ደብተር (አካውንቶች፦ {len(members)})</b>\n━━━━━━━━━━━━━━━━━━━\n"
                 for m in members:
@@ -362,21 +361,9 @@ def webhook():
             send_telegram_message(chat_id, msg, p_key)
             send_telegram_message(chat_id, "👇 ከታች ያለውን አዝራር በመጫን የዕቁብ አፕሊኬሽኑን መክፈት ይችላሉ፦", inline_key)
 
-        elif text == "🎲 የሳምንቱ ዕጣ":
-            d_num = sett['latest_draw_number'] if sett else 'አልወጣም'
-            d_date = sett['latest_draw_date'] if sett else '-'
-            d_win = sett['winner_name'] if sett else '-'
-            msg = f"🎲 <b>የሳምንቱ ዕጣ መረጃ</b>\n━━━━━━━━━━━━━━━━━━━\n🔢 <b>የዕጣ ቁጥር:</b> {d_num}\n🏆 <b>አሸናፊ:</b> {d_win}\n📅 <b>ወጣበት ቀን:</b> {d_date}"
-            send_telegram_message(chat_id, msg, p_key)
-
         elif text == "💳 ሳምንታዊ ክፍያ ፈፅም":
             inline_key = {"inline_keyboard": [[{"text": "💳 ክፍያ ለመክፈል አፑን ክፈት", "web_app": {"url": WEB_APP_URL}}]]}
             send_telegram_message(chat_id, "📲 እባክዎን ከታች ያለውን አዝራር በመጫን የክፍያ ስክሪንሹት ወይም የትራንዛክሽን ቁጥር ያስገቡ፦", inline_key)
-
-        elif text == "📞 ድጋፍ / አድሚን":
-            s_phone = sett['support_phone'] if sett and sett['support_phone'] else '+251 911 00 00 00'
-            msg = f"📞 <b>KOKETI KURT & LOUNGE ድጋፍ መስመር፦</b>\n\n📱 <b>ስልክ:</b> {s_phone}\n💬 <b>ቴሌግራም አድሚን:</b> @KoketiAdmin\n📍 <b>አድሻ:</b> ሀዋሳ፣ ኢትዮጵያ"
-            send_telegram_message(chat_id, msg, p_key)
 
         elif text == "⚙️ የአድሚን መቆጣጠሪያ ፓናል" and is_admin:
             inline_key = {"inline_keyboard": [[{"text": "⚙️ ወደ አድሚን ፓናል ግባ", "web_app": {"url": f"{WEB_APP_URL}/admin"}}]]}
