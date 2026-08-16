@@ -16,21 +16,29 @@
             --text-muted: #94a3b8;
             --border: rgba(255, 255, 255, 0.1);
             --success: #10b981;
-            --danger: #ef4444;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
         body { background: var(--bg); color: var(--text); padding: 12px; padding-bottom: 40px; }
         .container { max-width: 500px; margin: 0 auto; }
 
+        /* Top Action Bar (Language Switcher) */
+        .top-bar { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+        .lang-btn {
+            background: rgba(245, 158, 11, 0.15); border: 1px solid var(--gold);
+            color: var(--gold); padding: 5px 12px; border-radius: 20px; font-weight: bold;
+            font-size: 0.8rem; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .lang-btn:hover { background: var(--gold); color: #0f172a; }
+
         .header-card {
             background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            border: 1px solid var(--gold); border-radius: 16px; padding: 20px; text-align: center;
-            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.15); margin-bottom: 20px;
+            border: 1px solid var(--gold); border-radius: 16px; padding: 16px; text-align: center;
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.15); margin-bottom: 15px;
         }
-        .header-card h1 { color: var(--gold); font-size: 1.4rem; font-weight: bold; margin-bottom: 5px; }
-        .header-card p { color: var(--text-muted); font-size: 0.85rem; }
+        .header-card h1 { color: var(--gold); font-size: 1.3rem; font-weight: bold; }
+        .header-card p { color: var(--text-muted); font-size: 0.8rem; }
 
-        .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 15px; }
         .tab-btn {
             flex: 1; padding: 12px; background: var(--card); border: 1px solid var(--border);
             color: var(--text-muted); border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.3s;
@@ -40,154 +48,193 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        .form-card, .info-card {
-            background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 15px;
+        .master-panel {
+            background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+            padding: 16px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
-        .input-group { margin-bottom: 14px; }
-        .input-group label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; }
+        .panel-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 12px;
+        }
+        .panel-title { color: var(--gold); font-weight: bold; font-size: 1rem; }
+        
+        .support-btn {
+            display: inline-flex; align-items: center; gap: 6px; background: rgba(245, 158, 11, 0.15);
+            color: var(--gold); border: 1px solid var(--gold); padding: 6px 12px; border-radius: 20px;
+            text-decoration: none; font-size: 0.8rem; font-weight: bold; transition: 0.2s;
+        }
+        .support-btn:hover { background: var(--gold); color: #0f172a; }
+
+        .draw-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+            background: rgba(15, 23, 42, 0.6); padding: 10px; border-radius: 10px; margin-bottom: 15px; text-align: center;
+        }
+        .draw-item span { display: block; font-size: 0.75rem; color: var(--text-muted); }
+        .draw-item b { font-size: 0.85rem; color: var(--gold); }
+
+        .input-group { margin-bottom: 12px; }
+        .input-group label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px; }
         .input-group input, .input-group select {
-            width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border);
-            border-radius: 8px; color: var(--text); outline: none; font-size: 0.95rem;
+            width: 100%; padding: 10px; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border);
+            border-radius: 8px; color: var(--text); outline: none; font-size: 0.9rem;
         }
         .input-group input:focus { border-color: var(--gold); }
 
         .btn {
-            width: 100%; padding: 14px; background: var(--gold); color: #0f172a; border: none;
-            border-radius: 10px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.3s;
+            width: 100%; padding: 12px; background: var(--gold); color: #0f172a; border: none;
+            border-radius: 8px; font-weight: bold; font-size: 0.95rem; cursor: pointer; transition: 0.3s;
         }
         .btn:hover { background: var(--gold-light); }
 
-        .member-book {
-            border: 1px dashed var(--gold); border-radius: 12px; padding: 15px; margin-bottom: 15px; background: rgba(245, 158, 11, 0.03);
+        .member-card {
+            border: 1px dashed var(--gold); border-radius: 10px; padding: 12px;
+            margin-bottom: 10px; background: rgba(245, 158, 11, 0.02);
         }
-        .book-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; }
+        .book-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.85rem; }
         .book-row .label { color: var(--text-muted); }
-        .book-row .value { font-weight: bold; }
 
         .file-upload {
-            border: 2px dashed var(--border); border-radius: 8px; padding: 15px; text-align: center; cursor: pointer;
+            border: 1px dashed var(--gold); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer;
+            background: rgba(245, 158, 11, 0.05);
         }
         .file-upload input { display: none; }
 
-        .alert { padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 0.85rem; }
+        .alert { padding: 10px; border-radius: 8px; margin-bottom: 12px; font-size: 0.8rem; text-align: center; }
         .alert-info { background: rgba(245, 158, 11, 0.1); border: 1px solid var(--gold); color: var(--gold); }
     </style>
 </head>
 <body>
 
     <div class="container">
+        <!-- Top Bar Language Switcher -->
+        <div class="top-bar">
+            <button class="lang-btn" onclick="toggleLanguage()">
+                <i class="fas fa-globe"></i> <span id="langLabel">English</span>
+            </button>
+        </div>
+
+        <!-- Header -->
         <div class="header-card">
-            <i class="fas fa-crown" style="font-size: 2.5rem; color: var(--gold); margin-bottom: 8px;"></i>
+            <i class="fas fa-crown" style="font-size: 2rem; color: var(--gold); margin-bottom: 5px;"></i>
             <h1>KOKETI KURT & LOUNGE</h1>
-            <p>ዲጂታል የዕቁብ መዝገብና የደብተር አገልግሎት</p>
+            <p id="t_subtitle">ዲጂታል የዕቁብ መዝገብና ክፍያ ፓናል</p>
         </div>
 
-        <!-- ➕ የደንበኞች ድጋፍ ስልክ ቁጥር ማሳያ ሳጥን -->
-        <div id="supportPhoneBox" class="alert alert-info" style="display: none; text-align: center; font-weight: bold; margin-bottom: 15px;">
-            <i class="fas fa-headset"></i> የደንበኞች ድጋፍ ስልክ፦ <span id="displaySupportPhone" style="color: var(--gold);"></span>
-        </div>
-
+        <!-- Navigation Tabs -->
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('dashboardTab')"><i class="fas fa-book-open"></i> የኔ ደብተር</button>
-            <button class="tab-btn" onclick="switchTab('registerTab')"><i class="fas fa-user-plus"></i> አዲስ ምዝገባ</button>
+            <button class="tab-btn active" id="t_tab_dash" onclick="switchTab('dashboardTab')"><i class="fas fa-chart-line"></i> ዳሽቦርድ</button>
+            <button class="tab-btn" id="t_tab_reg" onclick="switchTab('registerTab')"><i class="fas fa-user-plus"></i> አዲስ ምዝገባ</button>
         </div>
 
-        <!-- Dashboard Tab -->
+        <!-- DASHBOARD TAB -->
         <div id="dashboardTab" class="tab-content active">
-            <div id="drawInfoCard" class="info-card" style="border-color: var(--gold);">
-                <h3 style="color: var(--gold); font-size: 1rem; margin-bottom: 10px;"><i class="fas fa-trophy"></i> የሳምንቱ የዕጣ መረጃ</h3>
-                <div class="book-row"><span class="label">የወጣው ዕጣ ቁጥር፦</span><span class="value" id="latestDrawNum">-</span></div>
-                <div class="book-row"><span class="label">የዕጣው ባለቤት፦</span><span class="value" id="latestWinner">-</span></div>
-                <div class="book-row"><span class="label">ቀን፦</span><span class="value" id="latestDrawDate">-</span></div>
-            </div>
+            <div class="master-panel">
+                <div class="panel-header">
+                    <span class="panel-title" id="t_panel_title"><i class="fas fa-trophy"></i> የዕጣና የክፍያ ማዕከል</span>
+                    <a href="#" id="supportPhoneBtn" class="support-btn" style="display:none;">
+                        <i class="fas fa-headset"></i> <span id="t_support_lbl">ድጋፍ</span>
+                    </a>
+                </div>
 
-            <div id="myMembersContainer">
-                <!-- User's Registered Equbs -->
-            </div>
-
-            <!-- Weekly Receipt Upload Card -->
-            <div id="weeklyUploadCard" class="form-card" style="display: none;">
-                <h3 style="color: var(--gold); font-size: 1rem; margin-bottom: 10px;"><i class="fas fa-receipt"></i> የሳምንታዊ ክፍያ ስክሪንሹት መላኪያ</h3>
-                <form id="weeklyReceiptForm">
-                    <div class="input-group">
-                        <label>የሚከፍሉበት አካውንት ይምረጡ</label>
-                        <select id="weeklyMemberSelect" required></select>
+                <!-- Live Draw Overview -->
+                <div class="draw-grid">
+                    <div class="draw-item">
+                        <span id="t_draw_num">የወጣው ዕጣ</span>
+                        <b id="latestDrawNum">-</b>
                     </div>
-                    <div class="input-group">
-                        <label>የክፍያ ደረሰኝ/ስክሪንሹት</label>
-                        <div class="file-upload" onclick="document.getElementById('weeklyFile').click()">
-                            <i class="fas fa-cloud-upload-alt" style="font-size: 1.5rem; color: var(--gold);"></i>
-                            <p id="weeklyFileName" style="font-size: 0.8rem; margin-top: 5px;">ፋይል ለመምረጥ እዚህ ይጫኑ</p>
-                            <input type="file" id="weeklyFile" accept="image/*" required onchange="updateFileName(this, 'weeklyFileName')">
+                    <div class="draw-item">
+                        <span id="t_draw_winner">አሸናፊ</span>
+                        <b id="latestWinner">-</b>
+                    </div>
+                    <div class="draw-item">
+                        <span id="t_draw_date">ቀን</span>
+                        <b id="latestDrawDate">-</b>
+                    </div>
+                </div>
+
+                <!-- Payment Form -->
+                <div id="weeklyUploadCard" style="display: none;">
+                    <form id="weeklyReceiptForm">
+                        <div class="input-group">
+                            <label id="t_lbl_select_acc">የሚከፍሉበት አካውንት ይምረጡ</label>
+                            <select id="weeklyMemberSelect" required></select>
                         </div>
-                    </div>
-                    <button type="submit" class="btn">ስክሪንሹቱን ለአድሚኑ ላክ</button>
-                </form>
+                        <div class="input-group">
+                            <label id="t_lbl_weekly_receipt">የሳምንታዊ ክፍያ ደረሰኝ (ስክሪንሹት)</label>
+                            <div class="file-upload" onclick="document.getElementById('weeklyFile').click()">
+                                <i class="fas fa-cloud-upload-alt" style="font-size: 1.2rem; color: var(--gold);"></i>
+                                <span id="weeklyFileName" style="font-size: 0.8rem; margin-left: 8px;">ደረሰኝ ይምረጡ</span>
+                                <input type="file" id="weeklyFile" accept="image/*" required onchange="updateFileName(this, 'weeklyFileName')">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn" id="t_btn_submit_pay"><i class="fas fa-paper-plane"></i> ክፍያውን አረጋግጥ</button>
+                    </form>
+                </div>
             </div>
+
+            <!-- Members List -->
+            <div id="myMembersContainer"></div>
         </div>
 
-        <!-- Registration Tab -->
+        <!-- REGISTRATION TAB -->
         <div id="registerTab" class="tab-content">
             <div id="regStatusAlert" class="alert alert-info" style="display: none;"></div>
 
-            <div class="form-card">
+            <div class="master-panel">
                 <form id="registrationForm">
                     <input type="hidden" id="telegramIdInput">
-                    <input type="hidden" id="refNoInput">
-
+                    
                     <div class="input-group">
-                        <label>ስም (First Name)</label>
-                        <input type="text" id="firstName" required>
+                        <label id="t_lbl_fullname">ሙሉ ስም (ከአያት ጋር)</label>
+                        <div style="display: flex; gap: 5px;">
+                            <input type="text" id="firstName" placeholder="ስም" required>
+                            <input type="text" id="fatherName" placeholder="የአባት" required>
+                            <input type="text" id="grandName" placeholder="የአያት" required>
+                        </div>
                     </div>
                     <div class="input-group">
-                        <label>የአባት ስም (Father's Name)</label>
-                        <input type="text" id="fatherName" required>
-                    </div>
-                    <div class="input-group">
-                        <label>የአያት ስም (Grandfather's Name)</label>
-                        <input type="text" id="grandName" required>
-                    </div>
-                    <div class="input-group">
-                        <label>ስልክ ቁጥር</label>
+                        <label id="t_lbl_phone">ስልክ ቁጥር</label>
                         <input type="tel" id="phoneNumber" placeholder="09..." required>
                     </div>
                     <div class="input-group">
-                        <label>ክልል / ከተማ</label>
+                        <label id="t_lbl_city">ክልል / ከተማ</label>
                         <input type="text" id="regionSelect" placeholder="ምሳሌ፦ ሀዋሳ" required>
                     </div>
-                    <div class="input-group">
-                        <label>የዕጣ ብዛት (Share Count)</label>
-                        <input type="number" id="shareCount" value="1" min="1" required onchange="calculateTotal()">
+                    <div class="input-group" style="display: flex; gap: 10px;">
+                        <div style="flex: 1;">
+                            <label id="t_lbl_shares">የዕጣ ብዛት</label>
+                            <input type="number" id="shareCount" value="1" min="1" required onchange="calculateTotal()">
+                        </div>
+                        <div style="flex: 2;">
+                            <label id="t_lbl_cycle">የአንዱ ዕጣ ሳምንታዊ ክፍያ</label>
+                            <select id="cycleAmount" onchange="calculateTotal()">
+                                <option value="5000">5,000 ETB</option>
+                                <option value="10000">10,000 ETB</option>
+                                <option value="20000">20,000 ETB</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="input-group">
-                        <label>የአንዱ ዕጣ ሳምንታዊ ክፍያ</label>
-                        <select id="cycleAmount" onchange="calculateTotal()">
-                            <option value="5000">5,000 ብር</option>
-                            <option value="10000">10,000 ብር</option>
-                            <option value="20000">20,000 ብር</option>
-                        </select>
+                        <label><span id="t_lbl_total_pay">ጠቅላላ የሳምንት ክፍያዎት፦</span> <b id="totalCalc" style="color: var(--gold);">5,000 ብር</b></label>
                     </div>
                     <div class="input-group">
-                        <label>ጠቅላላ የሳምንት ክፍያዎት፦ <b id="totalCalc" style="color: var(--gold);">5,000 ብር</b></label>
-                    </div>
-                    <div class="input-group">
-                        <label>የክፍያ መንገድ</label>
+                        <label id="t_lbl_pay_method">የክፍያ መንገድ</label>
                         <select id="paymentMethod">
-                            <option value="CBE">የኢትዮጵያ ንግድ ባንክ (CBE)</option>
-                            <option value="Telebirr">ቴሌብር (Telebirr)</option>
-                            <option value="BOA">አቢሲንያ ባንክ (BOA)</option>
+                            <option value="CBE" id="opt_cbe">የኢትዮጵያ ንግድ ባንክ (CBE)</option>
+                            <option value="Telebirr" id="opt_telebirr">ቴሌብር (Telebirr)</option>
+                            <option value="BOA" id="opt_boa">አቢሲንያ ባንክ (BOA)</option>
                         </select>
                     </div>
                     <div class="input-group">
-                        <label>የመጀመሪያ ክፍያ ደረሰኝ (ስክሪንሹት)</label>
+                        <label id="t_lbl_reg_receipt">የመጀመሪያ ክፍያ ደረሰኝ (ስክሪንሹት)</label>
                         <div class="file-upload" onclick="document.getElementById('regReceipt').click()">
-                            <i class="fas fa-file-invoice" style="font-size: 1.5rem; color: var(--gold);"></i>
-                            <p id="regFileName" style="font-size: 0.8rem; margin-top: 5px;">የክፍያ ደረሰኝ ያያይዙ</p>
+                            <i class="fas fa-file-invoice" style="font-size: 1.2rem; color: var(--gold);"></i>
+                            <span id="regFileName" style="font-size: 0.8rem; margin-left: 8px;">ደረሰኝ ያያይዙ</span>
                             <input type="file" id="regReceipt" accept="image/*" required onchange="updateFileName(this, 'regFileName')">
                         </div>
                     </div>
                     <div class="input-group">
-                        <label>የጋበዘዎት ሰው መለያ (Optional Referral)</label>
+                        <label id="t_lbl_referral">የጋበዘዎት ሰው መለያ (Optional)</label>
                         <input type="text" id="referredBy" placeholder="የሪፈራል ኮድ">
                     </div>
 
@@ -204,6 +251,117 @@
         const telegramId = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id.toString() : "";
         document.getElementById('telegramIdInput').value = telegramId;
 
+        // MULTILINGUAL DICTIONARY
+        let currentLang = 'am';
+        const translations = {
+            am: {
+                langBtn: "English",
+                subtitle: "ዲጂታል የዕቁብ መዝገብና ክፍያ ፓናል",
+                tabDash: '<i class="fas fa-chart-line"></i> ዳሽቦርድ',
+                tabReg: '<i class="fas fa-user-plus"></i> አዲስ ምዝገባ',
+                panelTitle: '<i class="fas fa-trophy"></i> የዕጣና የክፍያ ማዕከል',
+                supportLbl: "ድጋፍ",
+                drawNum: "የወጣው ዕጣ",
+                drawWinner: "አሸናፊ",
+                drawDate: "ቀን",
+                selectAcc: "የሚከፍሉበት አካውንት ይምረጡ",
+                weeklyReceipt: "የሳምንታዊ ክፍያ ደረሰኝ (ስክሪንሹት)",
+                selectReceipt: "ደረሰኝ ይምረጡ",
+                btnSubmitPay: '<i class="fas fa-paper-plane"></i> ክፍያውን አረጋግጥ',
+                fullName: "ሙሉ ስም (ከአያት ጋር)",
+                pFirst: "ስም", pFather: "የአባት", pGrand: "የአያት",
+                phone: "ስልክ ቁጥር",
+                city: "ክልል / ከተማ", pCity: "ምሳሌ፦ ሀዋሳ",
+                shares: "የዕጣ ብዛት",
+                cycle: "የአንዱ ዕጣ ሳምንታዊ ክፍያ",
+                totalPay: "ጠቅላላ የሳምንት ክፍያዎት፦",
+                currency: "ብር",
+                payMethod: "የክፍያ መንገድ",
+                cbe: "የኢትዮጵያ ንግድ ባንክ (CBE)", telebirr: "ቴሌብር (Telebirr)", boa: "አቢሲንያ ባንክ (BOA)",
+                regReceipt: "የመጀመሪያ ክፍያ ደረሰኝ (ስክሪንሹት)",
+                attachReceipt: "ደረሰኝ ያያይዙ",
+                referral: "የጋበዘዎት ሰው መለያ (Optional)", pRef: "የሪፈራል ኮድ",
+                btnReg: "የምዝገባ ጥያቄ ላክ",
+                noAcc: "እስካሁን የተመዘገበ አካውንት የለዎትም። በአዲስ ምዝገባ ገጽ መመዝገብ ይችላሉ።",
+                paid: "✅ ተከፍሏል", unpaid: "❌ አልተከፈለም",
+                refLbl: "Ref:", nameLbl: "ስም:", statusLbl: "ሁኔታ:", weeklyLbl: "የሳምንቱ ክፍያ:"
+            },
+            en: {
+                langBtn: "አማርኛ",
+                subtitle: "Digital Equb Register & Payment Panel",
+                tabDash: '<i class="fas fa-chart-line"></i> Dashboard',
+                tabReg: '<i class="fas fa-user-plus"></i> New Register',
+                panelTitle: '<i class="fas fa-trophy"></i> Draw & Payment Center',
+                supportLbl: "Support",
+                drawNum: "Drawn No.",
+                drawWinner: "Winner",
+                drawDate: "Date",
+                selectAcc: "Select Account To Pay",
+                weeklyReceipt: "Weekly Payment Receipt (Screenshot)",
+                selectReceipt: "Select Receipt",
+                btnSubmitPay: '<i class="fas fa-paper-plane"></i> Confirm Payment',
+                fullName: "Full Name (First, Father, Grandfather)",
+                pFirst: "First Name", pFather: "Father's Name", pGrand: "Grandfather's Name",
+                phone: "Phone Number",
+                city: "Region / City", pCity: "e.g., Hawassa",
+                shares: "Share Count",
+                cycle: "Single Share Weekly Amount",
+                totalPay: "Total Weekly Payment:",
+                currency: "ETB",
+                payMethod: "Payment Method",
+                cbe: "Commercial Bank of Ethiopia (CBE)", telebirr: "Telebirr", boa: "Bank of Abyssinia (BOA)",
+                regReceipt: "First Payment Receipt (Screenshot)",
+                attachReceipt: "Attach Receipt",
+                referral: "Referred By (Optional)", pRef: "Referral Code",
+                btnReg: "Submit Registration",
+                noAcc: "You have no registered accounts yet. Please register first.",
+                paid: "✅ Paid", unpaid: "❌ Unpaid",
+                refLbl: "Ref:", nameLbl: "Name:", statusLbl: "Status:", weeklyLbl: "Weekly Status:"
+            }
+        };
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'am' ? 'en' : 'am';
+            const t = translations[currentLang];
+
+            document.getElementById('langLabel').innerText = t.langBtn;
+            document.getElementById('t_subtitle').innerText = t.subtitle;
+            document.getElementById('t_tab_dash').innerHTML = t.tabDash;
+            document.getElementById('t_tab_reg').innerHTML = t.tabReg;
+            document.getElementById('t_panel_title').innerHTML = t.panelTitle;
+            document.getElementById('t_support_lbl').innerText = t.supportLbl;
+            document.getElementById('t_draw_num').innerText = t.drawNum;
+            document.getElementById('t_draw_winner').innerText = t.drawWinner;
+            document.getElementById('t_draw_date').innerText = t.drawDate;
+            document.getElementById('t_lbl_select_acc').innerText = t.selectAcc;
+            document.getElementById('t_lbl_weekly_receipt').innerText = t.weeklyReceipt;
+            document.getElementById('weeklyFileName').innerText = t.selectReceipt;
+            document.getElementById('t_btn_submit_pay').innerHTML = t.btnSubmitPay;
+            
+            document.getElementById('t_lbl_fullname').innerText = t.fullName;
+            document.getElementById('firstName').placeholder = t.pFirst;
+            document.getElementById('fatherName').placeholder = t.pFather;
+            document.getElementById('grandName').placeholder = t.pGrand;
+            document.getElementById('t_lbl_phone').innerText = t.phone;
+            document.getElementById('t_lbl_city').innerText = t.city;
+            document.getElementById('regionSelect').placeholder = t.pCity;
+            document.getElementById('t_lbl_shares').innerText = t.shares;
+            document.getElementById('t_lbl_cycle').innerText = t.cycle;
+            document.getElementById('t_lbl_total_pay').innerText = t.totalPay;
+            document.getElementById('t_lbl_pay_method').innerText = t.payMethod;
+            document.getElementById('opt_cbe').innerText = t.cbe;
+            document.getElementById('opt_telebirr').innerText = t.telebirr;
+            document.getElementById('opt_boa').innerText = t.boa;
+            document.getElementById('t_lbl_reg_receipt').innerText = t.regReceipt;
+            document.getElementById('regFileName').innerText = t.attachReceipt;
+            document.getElementById('t_lbl_referral').innerText = t.referral;
+            document.getElementById('referredBy').placeholder = t.pRef;
+            document.getElementById('regBtn').innerText = t.btnReg;
+
+            calculateTotal();
+            loadUserData();
+        }
+
         function switchTab(tabId) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -219,7 +377,8 @@
         function calculateTotal() {
             const count = parseInt(document.getElementById('shareCount').value) || 1;
             const amount = parseFloat(document.getElementById('cycleAmount').value) || 5000;
-            document.getElementById('totalCalc').innerText = (count * amount).toLocaleString() + " ብር";
+            const t = translations[currentLang];
+            document.getElementById('totalCalc').innerText = (count * amount).toLocaleString() + " " + t.currency;
         }
 
         function updateFileName(input, targetId) {
@@ -230,23 +389,22 @@
 
         async function loadUserData() {
             if(!telegramId) return;
+            const t = translations[currentLang];
             try {
                 const res = await fetch(`/api/member_info/${telegramId}`);
                 const data = await res.json();
 
-                // Set Draw Info & Admin Dynamic Settings
                 if(data.settings) {
-                    document.getElementById('latestDrawNum').innerText = data.settings.latest_draw_number || 'አልወጣም';
+                    document.getElementById('latestDrawNum').innerText = data.settings.latest_draw_number || '-';
                     document.getElementById('latestWinner').innerText = data.settings.winner_name || '-';
                     document.getElementById('latestDrawDate').innerText = data.settings.latest_draw_date || '-';
 
-                    // 1. የድጋፍ ስልክ ቁጥር ማሳያ
                     if(data.settings.support_phone) {
-                        document.getElementById('displaySupportPhone').innerText = data.settings.support_phone;
-                        document.getElementById('supportPhoneBox').style.display = 'block';
+                        const phoneBtn = document.getElementById('supportPhoneBtn');
+                        phoneBtn.href = `tel:${data.settings.support_phone}`;
+                        phoneBtn.style.display = 'inline-flex';
                     }
 
-                    // 2. የምዝገባ ሁኔታ እና የገደብ (Max Members) ቼክ
                     const totalReg = data.stats ? data.stats.total_registered : (data.members ? data.members.length : 0);
                     const maxLimit = parseInt(data.settings.max_members) || 0;
 
@@ -255,16 +413,13 @@
                         const alertBox = document.getElementById('regStatusAlert');
                         
                         regBtn.disabled = true;
-                        regBtn.innerText = "ምዝገባ ለጊዜው ተዘግቷል";
+                        regBtn.innerText = currentLang === 'am' ? "ምዝገባ ተዘግቷል" : "Registration Closed";
 
                         alertBox.style.display = 'block';
-                        alertBox.innerText = data.settings.registration_status === 'CLOSED' 
-                            ? "⚠️ የምዝገባ ጊዜ ተጠናቋል/ተዘግቷል።" 
-                            : "⚠️ የተፈቀደው የአባላት ብዛት ገደብ ስለሞላ ምዝገባ ተዘግቷል።";
+                        alertBox.innerText = currentLang === 'am' ? "⚠️ የምዝገባ ጊዜ ተጠናቋል ወይም ገደቡ ሞልቷል።" : "⚠️ Registration period has ended or limit reached.";
                     }
                 }
 
-                // Populate User Accounts
                 const container = document.getElementById('myMembersContainer');
                 const select = document.getElementById('weeklyMemberSelect');
                 container.innerHTML = '';
@@ -280,18 +435,17 @@
                         select.appendChild(option);
 
                         const card = document.createElement('div');
-                        card.className = 'member-book';
+                        card.className = 'member-card';
                         card.innerHTML = `
-                            <div class="book-row"><span class="label">የመዝገብ ቁጥር (Ref):</span><span class="value" style="color:var(--gold);">${m.ref_no}</span></div>
-                            <div class="book-row"><span class="label">ስም:</span><span class="value">${m.first_name} ${m.father_name}</span></div>
-                            <div class="book-row"><span class="label">የምዝገባ ሁኔታ:</span><span class="value" style="color:${m.status === 'Approved' ? 'var(--success)' : 'var(--gold)'};">${m.status}</span></div>
-                            <div class="book-row"><span class="label">የዚህ ሳምንት ክፍያ:</span><span class="value">${m.weekly_paid_status === 1 ? '✅ ተከፍሏል' : '❌ አልተከፈለም'}</span></div>
-                            <div class="book-row"><span class="label">ጠቅላላ የተከፈለ:</span><span class="value">${m.paid_amount.toLocaleString()} ብር</span></div>
+                            <div class="book-row"><span class="label">${t.refLbl}</span><span class="value" style="color:var(--gold); font-weight:bold;">${m.ref_no}</span></div>
+                            <div class="book-row"><span class="label">${t.nameLbl}</span><span class="value">${m.first_name} ${m.father_name}</span></div>
+                            <div class="book-row"><span class="label">${t.statusLbl}</span><span class="value" style="color:${m.status === 'Approved' ? 'var(--success)' : 'var(--gold)'};">${m.status}</span></div>
+                            <div class="book-row"><span class="label">${t.weeklyLbl}</span><span class="value">${m.weekly_paid_status === 1 ? t.paid : t.unpaid}</span></div>
                         `;
                         container.appendChild(card);
                     });
                 } else {
-                    container.innerHTML = `<div class="alert alert-info">እስካሁን የተመዘገበ አካውንት የለዎትም። በአዲስ ምዝገባ ገጽ መመዝገብ ይችላሉ።</div>`;
+                    container.innerHTML = `<div class="alert alert-info">${t.noAcc}</div>`;
                 }
 
             } catch(e) { console.error(e); }
@@ -301,7 +455,7 @@
             e.preventDefault();
             const btn = document.getElementById('regBtn');
             btn.disabled = true;
-            btn.innerText = "እየተላከ ነው...";
+            btn.innerText = currentLang === 'am' ? "እየተላከ ነው..." : "Submitting...";
 
             const formData = new FormData();
             formData.append('ref_no', generateRefNo());
@@ -321,17 +475,17 @@
                 const res = await fetch('/api/register', { method: 'POST', body: formData });
                 const data = await res.json();
                 if(res.ok) {
-                    alert("የምዝገባ ጥያቄዎ በተሳካ ሁኔታ ለአድሚኑ ተልኳል!");
+                    alert(currentLang === 'am' ? "የምዝገባ ጥያቄዎ ለአድሚኑ ተልኳል!" : "Registration submitted successfully!");
                     location.reload();
                 } else {
-                    alert(data.message || "ምዝገባው አልተሳካም");
+                    alert(data.message || (currentLang === 'am' ? "ምዝገባው አልተሳካም" : "Registration failed"));
                     btn.disabled = false;
-                    btn.innerText = "የምዝገባ ጥያቄ ላክ";
+                    btn.innerText = translations[currentLang].btnReg;
                 }
             } catch(err) {
-                alert("የሰርቨር ችግር አጋጥሟል!");
+                alert(currentLang === 'am' ? "የሰርቨር ችግር አጋጥሟል!" : "Server error!");
                 btn.disabled = false;
-                btn.innerText = "የምዝገባ ጥያቄ ላክ";
+                btn.innerText = translations[currentLang].btnReg;
             }
         });
 
@@ -345,12 +499,10 @@
                 const res = await fetch('/api/upload_weekly_receipt', { method: 'POST', body: formData });
                 const data = await res.json();
                 if(res.ok) {
-                    alert("የሳምንቱ ክፍያ ስክሪንሹት ለአድሚኑ ተልኳል!");
+                    alert(currentLang === 'am' ? "የሳምንቱ ክፍያ ስክሪንሹት ለአድሚኑ ተልኳል!" : "Payment receipt sent!");
                     location.reload();
-                } else {
-                    alert(data.message);
-                }
-            } catch(err) { alert("መላክ አልተቻለም!"); }
+                } else { alert(data.message); }
+            } catch(err) { alert(currentLang === 'am' ? "መላክ አልተቻለም!" : "Upload failed!"); }
         });
 
         loadUserData();
