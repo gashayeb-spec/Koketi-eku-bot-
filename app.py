@@ -10,12 +10,14 @@ from flask_cors import CORS
 app = Flask(__name__, static_folder='.')
 CORS(app)
 
+# Configuration Setup
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8932085001:AAFSuqyjALyhumCO-Y6RwfHlwz1HJaugevU")
 ADMIN_ID = os.environ.get("ADMIN_ID", "5351353727")
 WEB_APP_URL = os.environ.get("WEB_APP_URL", "https://koketi-eku-bot-1.onrender.com")
-DB_PATH = os.environ.get("DB_PATH", "koketi_equb.db")
 
-UPLOAD_FOLDER = os.path.join('.', 'uploads')
+# SQLite Database Permission Fix for Server Environments
+DB_PATH = os.environ.get("DB_PATH", "/tmp/koketi_equb.db")
+UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "/tmp/uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 failed_attempts = {}
@@ -68,6 +70,17 @@ def init_db():
     conn.close()
 
 init_db()
+
+# Auto Set Telegram Webhook on App Start
+def set_telegram_webhook():
+    webhook_url = f"{WEB_APP_URL}/webhook"
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/setWebhook?url={webhook_url}"
+    try:
+        requests.get(url, timeout=10)
+    except Exception as e:
+        print(f"Webhook Error: {e}")
+
+set_telegram_webhook()
 
 def is_strong_password(password):
     if len(password) < 8 or not re.search(r"[A-Z]", password) or not re.search(r"[a-z]", password) or not re.search(r"[0-9]", password) or not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
@@ -535,5 +548,7 @@ def update_draw():
     conn.close()
     return jsonify({"status": "success"})
 
+# Environment Dynamic Port Handling for Cloud Services
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
