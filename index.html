@@ -18,10 +18,9 @@
             --success: #10b981;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-        body { background: var(--bg); color: var(--text); padding: 12px; padding-bottom: 40px; }
+        body { background: var(--bg); color: var(--text); padding: 12px; padding-bottom: 20px; }
         .container { max-width: 500px; margin: 0 auto; }
 
-        /* Top Action Bar (Language Switcher) */
         .top-bar { display: flex; justify-content: flex-end; margin-bottom: 8px; }
         .lang-btn {
             background: rgba(245, 158, 11, 0.15); border: 1px solid var(--gold);
@@ -48,6 +47,7 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
+        /* MASTER DASHBOARD PANEL */
         .master-panel {
             background: var(--card); border: 1px solid var(--border); border-radius: 16px;
             padding: 16px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
@@ -65,12 +65,35 @@
         }
         .support-btn:hover { background: var(--gold); color: #0f172a; }
 
+        /* DRAW INFO INSIDE PANEL */
         .draw-grid {
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-            background: rgba(15, 23, 42, 0.6); padding: 10px; border-radius: 10px; margin-bottom: 15px; text-align: center;
+            background: rgba(15, 23, 42, 0.6); padding: 10px; border-radius: 10px; margin-bottom: 12px; text-align: center;
         }
         .draw-item span { display: block; font-size: 0.75rem; color: var(--text-muted); }
         .draw-item b { font-size: 0.85rem; color: var(--gold); }
+
+        /* DIGITAL EQUB BOOK INSIDE PANEL */
+        .equb-notebook {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px dashed var(--gold);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .notebook-header {
+            font-size: 0.85rem;
+            color: var(--gold);
+            font-weight: bold;
+            border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+            padding-bottom: 5px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .book-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.85rem; }
+        .book-row .label { color: var(--text-muted); }
 
         .input-group { margin-bottom: 12px; }
         .input-group label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px; }
@@ -86,13 +109,6 @@
         }
         .btn:hover { background: var(--gold-light); }
 
-        .member-card {
-            border: 1px dashed var(--gold); border-radius: 10px; padding: 12px;
-            margin-bottom: 10px; background: rgba(245, 158, 11, 0.02);
-        }
-        .book-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.85rem; }
-        .book-row .label { color: var(--text-muted); }
-
         .file-upload {
             border: 1px dashed var(--gold); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer;
             background: rgba(245, 158, 11, 0.05);
@@ -106,7 +122,7 @@
 <body>
 
     <div class="container">
-        <!-- Top Bar Language Switcher -->
+        <!-- Language Switcher -->
         <div class="top-bar">
             <button class="lang-btn" onclick="toggleLanguage()">
                 <i class="fas fa-globe"></i> <span id="langLabel">English</span>
@@ -122,21 +138,23 @@
 
         <!-- Navigation Tabs -->
         <div class="tabs">
-            <button class="tab-btn active" id="t_tab_dash" onclick="switchTab('dashboardTab')"><i class="fas fa-chart-line"></i> ዳሽቦርድ</button>
+            <button class="tab-btn active" id="t_tab_dash" onclick="switchTab('dashboardTab')"><i class="fas fa-book-open"></i> የኔ ደብተርና ክፍያ</button>
             <button class="tab-btn" id="t_tab_reg" onclick="switchTab('registerTab')"><i class="fas fa-user-plus"></i> አዲስ ምዝገባ</button>
         </div>
 
         <!-- DASHBOARD TAB -->
         <div id="dashboardTab" class="tab-content active">
+            
+            <!-- SINGLE UNIFIED MASTER DASHBOARD PANEL -->
             <div class="master-panel">
                 <div class="panel-header">
-                    <span class="panel-title" id="t_panel_title"><i class="fas fa-trophy"></i> የዕጣና የክፍያ ማዕከል</span>
+                    <span class="panel-title" id="t_panel_title"><i class="fas fa-wallet"></i> የዕቁብ ማዕከል</span>
                     <a href="#" id="supportPhoneBtn" class="support-btn" style="display:none;">
                         <i class="fas fa-headset"></i> <span id="t_support_lbl">ድጋፍ</span>
                     </a>
                 </div>
 
-                <!-- Live Draw Overview -->
+                <!-- 1. Live Draw Info -->
                 <div class="draw-grid">
                     <div class="draw-item">
                         <span id="t_draw_num">የወጣው ዕጣ</span>
@@ -152,11 +170,14 @@
                     </div>
                 </div>
 
-                <!-- Payment Form -->
-                <div id="weeklyUploadCard" style="display: none;">
+                <!-- 2. Passbook Account Info -->
+                <div id="myMembersContainer"></div>
+
+                <!-- 3. Weekly Payment Form -->
+                <div id="weeklyUploadCard" style="display: none; border-top: 1px solid var(--border); padding-top: 12px;">
                     <form id="weeklyReceiptForm">
                         <div class="input-group">
-                            <label id="t_lbl_select_acc">የሚከፍሉበት አካውንት ይምረጡ</label>
+                            <label id="t_lbl_select_acc">የሚከፍሉበትን አካውንት ይምረጡ</label>
                             <select id="weeklyMemberSelect" required></select>
                         </div>
                         <div class="input-group">
@@ -172,8 +193,6 @@
                 </div>
             </div>
 
-            <!-- Members List -->
-            <div id="myMembersContainer"></div>
         </div>
 
         <!-- REGISTRATION TAB -->
@@ -183,6 +202,7 @@
             <div class="master-panel">
                 <form id="registrationForm">
                     <input type="hidden" id="telegramIdInput">
+                    <input type="hidden" id="refNoInput">
                     
                     <div class="input-group">
                         <label id="t_lbl_fullname">ሙሉ ስም (ከአያት ጋር)</label>
@@ -251,20 +271,17 @@
         const telegramId = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id.toString() : "";
         document.getElementById('telegramIdInput').value = telegramId;
 
-        // MULTILINGUAL DICTIONARY
         let currentLang = 'am';
         const translations = {
             am: {
                 langBtn: "English",
                 subtitle: "ዲጂታል የዕቁብ መዝገብና ክፍያ ፓናል",
-                tabDash: '<i class="fas fa-chart-line"></i> ዳሽቦርድ',
+                tabDash: '<i class="fas fa-book-open"></i> የኔ ደብተርና ክፍያ',
                 tabReg: '<i class="fas fa-user-plus"></i> አዲስ ምዝገባ',
-                panelTitle: '<i class="fas fa-trophy"></i> የዕጣና የክፍያ ማዕከል',
+                panelTitle: '<i class="fas fa-wallet"></i> የዕቁብ ማዕከል',
                 supportLbl: "ድጋፍ",
-                drawNum: "የወጣው ዕጣ",
-                drawWinner: "አሸናፊ",
-                drawDate: "ቀን",
-                selectAcc: "የሚከፍሉበት አካውንት ይምረጡ",
+                drawNum: "የወጣው ዕጣ", drawWinner: "አሸናፊ", drawDate: "ቀን",
+                selectAcc: "የሚከፍሉበትን አካውንት ይምረጡ",
                 weeklyReceipt: "የሳምንታዊ ክፍያ ደረሰኝ (ስክሪንሹት)",
                 selectReceipt: "ደረሰኝ ይምረጡ",
                 btnSubmitPay: '<i class="fas fa-paper-plane"></i> ክፍያውን አረጋግጥ',
@@ -284,18 +301,16 @@
                 btnReg: "የምዝገባ ጥያቄ ላክ",
                 noAcc: "እስካሁን የተመዘገበ አካውንት የለዎትም። በአዲስ ምዝገባ ገጽ መመዝገብ ይችላሉ።",
                 paid: "✅ ተከፍሏል", unpaid: "❌ አልተከፈለም",
-                refLbl: "Ref:", nameLbl: "ስም:", statusLbl: "ሁኔታ:", weeklyLbl: "የሳምንቱ ክፍያ:"
+                refLbl: "መዝገብ ቁጥር (Ref):", nameLbl: "ስም:", statusLbl: "የምዝገባ ሁኔታ:", weeklyLbl: "የዚህ ሳምንት ክፍያ:", paidAmtLbl: "ጠቅላላ የተከፈለ:", bookHeader: "የተመዘገበ የዕቁብ ደብተር"
             },
             en: {
                 langBtn: "አማርኛ",
                 subtitle: "Digital Equb Register & Payment Panel",
-                tabDash: '<i class="fas fa-chart-line"></i> Dashboard',
+                tabDash: '<i class="fas fa-book-open"></i> My Book & Payment',
                 tabReg: '<i class="fas fa-user-plus"></i> New Register',
-                panelTitle: '<i class="fas fa-trophy"></i> Draw & Payment Center',
+                panelTitle: '<i class="fas fa-wallet"></i> Equb Center',
                 supportLbl: "Support",
-                drawNum: "Drawn No.",
-                drawWinner: "Winner",
-                drawDate: "Date",
+                drawNum: "Drawn No.", drawWinner: "Winner", drawDate: "Date",
                 selectAcc: "Select Account To Pay",
                 weeklyReceipt: "Weekly Payment Receipt (Screenshot)",
                 selectReceipt: "Select Receipt",
@@ -316,7 +331,7 @@
                 btnReg: "Submit Registration",
                 noAcc: "You have no registered accounts yet. Please register first.",
                 paid: "✅ Paid", unpaid: "❌ Unpaid",
-                refLbl: "Ref:", nameLbl: "Name:", statusLbl: "Status:", weeklyLbl: "Weekly Status:"
+                refLbl: "Ref No:", nameLbl: "Name:", statusLbl: "Status:", weeklyLbl: "Weekly Status:", paidAmtLbl: "Total Paid:", bookHeader: "Registered Equb Passbook"
             }
         };
 
@@ -435,12 +450,14 @@
                         select.appendChild(option);
 
                         const card = document.createElement('div');
-                        card.className = 'member-card';
+                        card.className = 'equb-notebook';
                         card.innerHTML = `
+                            <div class="notebook-header"><i class="fas fa-address-card"></i> ${t.bookHeader}</div>
                             <div class="book-row"><span class="label">${t.refLbl}</span><span class="value" style="color:var(--gold); font-weight:bold;">${m.ref_no}</span></div>
                             <div class="book-row"><span class="label">${t.nameLbl}</span><span class="value">${m.first_name} ${m.father_name}</span></div>
                             <div class="book-row"><span class="label">${t.statusLbl}</span><span class="value" style="color:${m.status === 'Approved' ? 'var(--success)' : 'var(--gold)'};">${m.status}</span></div>
                             <div class="book-row"><span class="label">${t.weeklyLbl}</span><span class="value">${m.weekly_paid_status === 1 ? t.paid : t.unpaid}</span></div>
+                            <div class="book-row"><span class="label">${t.paidAmtLbl}</span><span class="value" style="color:var(--gold); font-weight:bold;">${m.paid_amount.toLocaleString()} ${t.currency}</span></div>
                         `;
                         container.appendChild(card);
                     });
