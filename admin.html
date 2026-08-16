@@ -13,6 +13,7 @@
     .btn-broadcast { background-color: #e11d48; margin-top: 10px; }
     .btn-unpaid { background-color: #f59e0b; color: #000; margin-top: 10px; }
     .btn-toggle-reg { background-color: #0284c7; margin-top: 10px; }
+    .btn-pwd { background-color: #8b5cf6; margin-top: 10px; }
     
     .btn-action { padding: 4px 8px; font-size: 11px; border-radius: 4px; border: none; color: white; cursor: pointer; margin-right: 2px; margin-bottom: 2px; }
     .btn-approve { background-color: #22c55e; }
@@ -26,6 +27,11 @@
 
     input, select, textarea { padding: 8px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; width: 100%; box-sizing: border-box; margin-bottom: 8px; font-size: 13px; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 15px; }
+    .stat-box { background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid #334155; text-align: center; }
+    .stat-box h4 { margin: 0; font-size: 11px; color: #94a3b8; }
+    .stat-box span { font-size: 18px; font-weight: bold; color: #38bdf8; display: block; margin-top: 4px; }
+
     table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
     th, td { border: 1px solid #334155; padding: 8px; text-align: left; }
     th { background-color: #0f172a; color: #94a3b8; }
@@ -44,23 +50,62 @@
 </head>
 <body>
 
+<!-- Login Overlay with Forget Password -->
 <div id="loginOverlay">
-    <div class="login-box">
+    <div class="login-box" id="loginFormBox">
         <h3 style="color:#38bdf8; margin-top:0;">🔒 የአድሚን መግቢያ</h3>
-        <p style="font-size:12px; color:#94a3b8;">እባክዎን የአድሚን ይለፍ ቃል ያስገቡ</p>
-        <input type="password" id="admin_password" placeholder="የይለፍ ቃል (Password)" style="text-align:center;">
+        <p style="font-size:12px; color:#94a3b8;">የአድሚን ይለፍ ቃል ያስገቡ</p>
+        <input type="password" id="admin_password" placeholder="Password" style="text-align:center;">
         <button class="btn" onclick="checkPassword()">ግባ (Login)</button>
+        <p style="font-size:12px; margin-top:15px;"><a href="#" onclick="showForgetPassword()" style="color:#f59e0b;">🔑 የይለፍ ቃል ረስተዋል? (Forget Password)</a></p>
+    </div>
+
+    <div class="login-box" id="forgetBox" style="display:none;">
+        <h3 style="color:#f59e0b; margin-top:0;">🔑 ይለፍ ቃል መቀየሪያ</h3>
+        <p style="font-size:11px; color:#cbd5e1;">OTP ለማግኘት 'OTP ላክ' የሚለውን ይጫኑ። በቴሌግራም ይደርስዎታል።</p>
+        <button class="btn" style="background-color:#0284c7;" onclick="requestOTP()">📩 OTP ወደ ቴሌግራም ላክ</button>
+        
+        <input type="text" id="reset_otp" placeholder="የደረሰዎትን OTP ያስገቡ" style="text-align:center; margin-top:10px;">
+        <input type="password" id="reset_new_pass" placeholder="አዲስ ጠንካራ ፓስወርድ" style="text-align:center;">
+        <p style="font-size:10px; color:#94a3b8; text-align:left;">* ቢያንስ 8 አሃዝ፣ ትልቅና ትንሽ ፊደል (A/a)፣ ቁጥር (0-9) እና ልዩ ምልክት (@#$) ማካተት አለበት።</p>
+        
+        <button class="btn btn-pwd" onclick="resetPassword()">💾 ፓስወርድ ቀይር</button>
+        <p style="font-size:12px; margin-top:10px;"><a href="#" onclick="hideForgetPassword()" style="color:#cbd5e1;">ተመለስ</a></p>
     </div>
 </div>
 
 <h2>⚙️ KOKETI የአድሚን መቆጣጠሪያ ፓናል</h2>
+
+<!-- Analytics / Dashboard Stats -->
+<div class="grid-stats">
+    <div class="stat-box">
+        <h4>ጠቅላላ ተመዝጋቢ</h4>
+        <span id="stat_total">0</span>
+    </div>
+    <div class="stat-box">
+        <h4>የጸደቁ (Approved)</h4>
+        <span id="stat_approved" style="color:#22c55e;">0</span>
+    </div>
+    <div class="stat-box">
+        <h4>በመጠባበቅ ላይ</h4>
+        <span id="stat_pending" style="color:#f59e0b;">0</span>
+    </div>
+    <div class="stat-box">
+        <h4>የታገዱ (Blocked)</h4>
+        <span id="stat_blocked" style="color:#ef4444;">0</span>
+    </div>
+    <div class="stat-box">
+        <h4>የተሰበሰበ ገንዘብ</h4>
+        <span id="stat_paid" style="font-size:14px; color:#38bdf8;">0 ብር</span>
+    </div>
+</div>
 
 <div class="card">
     <h3>🛑 የምዝገባ ገደብ እና ሁኔታ መቆጣጠሪያ</h3>
     <div class="grid">
         <div>
             <label>ከፍተኛ የአባላት ገደብ (Max Members)</label>
-            <input type="number" id="max_members_limit" placeholder="ለምሳሌ፡ 100">
+            <input type="number" id="max_members_limit" placeholder="100">
         </div>
         <div>
             <label>የምዝገባ ሁኔታ (Status)</label>
@@ -109,7 +154,7 @@
                     <th>Ref No</th>
                     <th>ስም & ስልክ</th>
                     <th>የሳምንት ክፍያ</th>
-                    <th>ደረሰኝ (Screenshot)</th>
+                    <th>ደረሰኝ</th>
                     <th>የዋስትናና የቼክ መረጃ</th>
                     <th>ሁኔታ</th>
                     <th>እርምጃዎች</th>
@@ -141,15 +186,60 @@
 
 <script>
 let currentMembers = [];
-const DEFAULT_PASS = "1234";
 
-function checkPassword() {
-    const input = document.getElementById('admin_password').value;
-    if(input === DEFAULT_PASS) {
-        document.getElementById('loginOverlay').style.display = 'none';
-        loadData();
+async function checkPassword() {
+    const password = document.getElementById('admin_password').value;
+    try {
+        const res = await fetch('/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+            document.getElementById('loginOverlay').style.display = 'none';
+            loadData();
+        } else {
+            alert(data.message);
+        }
+    } catch (e) {
+        alert('የኔትወርክ ስህተት!');
+    }
+}
+
+function showForgetPassword() {
+    document.getElementById('loginFormBox').style.display = 'none';
+    document.getElementById('forgetBox').style.display = 'block';
+}
+
+function hideForgetPassword() {
+    document.getElementById('forgetBox').style.display = 'none';
+    document.getElementById('loginFormBox').style.display = 'block';
+}
+
+async function requestOTP() {
+    const res = await fetch('/api/admin/request_otp', { method: 'POST' });
+    const data = await res.json();
+    alert(data.message);
+}
+
+async function resetPassword() {
+    const otp = document.getElementById('reset_otp').value;
+    const new_password = document.getElementById('reset_new_pass').value;
+
+    const res = await fetch('/api/admin/reset_password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ otp, new_password })
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+        alert(data.message);
+        hideForgetPassword();
     } else {
-        alert('የተሳሳተ የይለፍ ቃል ነው!');
+        alert(data.message);
     }
 }
 
@@ -158,6 +248,13 @@ async function loadData() {
     const data = await res.json();
     currentMembers = data.members;
     
+    // Update Stats
+    document.getElementById('stat_total').innerText = data.stats.total_registered;
+    document.getElementById('stat_approved').innerText = data.stats.total_approved;
+    document.getElementById('stat_pending').innerText = data.stats.total_pending;
+    document.getElementById('stat_blocked').innerText = data.stats.total_blocked;
+    document.getElementById('stat_paid').innerText = data.stats.total_paid_sum.toLocaleString() + ' ብር';
+
     document.getElementById('draw_number').value = data.settings.latest_draw_number || '';
     document.getElementById('draw_date').value = data.settings.latest_draw_date || '';
     document.getElementById('current_week').value = data.settings.current_week || 1;
@@ -179,7 +276,7 @@ async function loadData() {
         if(m.status === 'Cancelled') badgeClass = 'badge-cancelled';
 
         const receiptHtml = (m.receipt_path && m.receipt_path !== '-') 
-            ? `<a href="/uploads/${m.receipt_path}" target="_blank" style="color:#38bdf8; font-weight:bold;">🖼️ ፎቶ ተመልከት</a>` 
+            ? `<a href="/uploads/${m.receipt_path}" target="_blank" style="color:#38bdf8; font-weight:bold;">🖼️ ፎቶ</a>` 
             : 'የለም';
 
         row.innerHTML = `
@@ -195,10 +292,9 @@ async function loadData() {
                 <div style="font-size:10px; color:#cbd5e1;">
                     <b>ቼክ:</b> ${m.member_cheque || '-'}<br>
                     <b>ዋስ:</b> ${m.guarantor_name || '-'}<br>
-                    <b>የዋስ ቼክ:</b> ${m.guarantor_cheque || '-'}<br>
-                    <b>ንብረት:</b> ${m.collateral_item || '-'}
+                    <b>የዋስ ቼክ:</b> ${m.guarantor_cheque || '-'}
                 </div>
-                <button class="btn-action btn-guarantor" style="margin-top:4px;" onclick="openGuarantorModal(${m.id})">📝 ዋስትና መዝግብ</button>
+                <button class="btn-action btn-guarantor" style="margin-top:4px;" onclick="openGuarantorModal(${m.id})">📝 ዋስትና</button>
             </td>
             <td><span class="${badgeClass}">${m.status}</span></td>
             <td>
