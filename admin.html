@@ -66,10 +66,20 @@
         .settings-panel { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 25px; }
         .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
 
+        /* Table Search Header */
+        .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        .search-box {
+            display: flex; align-items: center; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--gold);
+            border-radius: 8px; padding: 4px 12px; width: 100%; max-width: 320px;
+        }
+        .search-box input {
+            background: transparent; border: none; color: white; padding: 8px; width: 100%; outline: none; font-size: 0.9rem;
+        }
+
         /* Table */
         .table-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
-        th, td { padding: 12px 10px; border-bottom: 1px solid var(--border); text-align: center; }
+        th, td { padding: 12px 10px; border-bottom: 1px solid var(--border); text-align: center; vertical-align: middle; }
         th { background: rgba(15, 23, 42, 0.8); color: var(--gold); white-space: nowrap; }
         tr:hover { background: rgba(255, 255, 255, 0.02); }
         .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; display: inline-block; }
@@ -80,7 +90,12 @@
         .action-btns { display: flex; gap: 4px; justify-content: center; }
         .action-btns button { padding: 6px 8px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.8rem; }
 
-        /* Receipts Link Style */
+        /* Receipts Image Preview Style */
+        .receipt-thumb {
+            width: 45px; height: 45px; object-fit: cover; border-radius: 6px; border: 1px solid var(--gold);
+            cursor: pointer; transition: transform 0.2s;
+        }
+        .receipt-thumb:hover { transform: scale(1.1); }
         .receipt-btn {
             display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px;
             background: rgba(245, 158, 11, 0.15); border: 1px solid var(--gold);
@@ -142,6 +157,14 @@
         </div>
     </div>
 
+    <!-- Image Viewer Modal (FOR RECEIPT) -->
+    <div id="imageViewerModal" class="modal" onclick="closeImageViewer()">
+        <div style="position: relative; max-width: 90%; max-height: 90vh;">
+            <img id="modalReceiptImg" src="" style="max-width: 100%; max-height: 85vh; border-radius: 8px; border: 2px solid var(--gold); display: block; margin: auto;">
+            <p style="text-align: center; color: white; margin-top: 10px;" data-am="ለመዝጋት ምስሉን ወይም ውጪውን ይጫኑ" data-en="Click anywhere to close">ለመዝጋት ምስሉን ወይም ውጪውን ይጫኑ</p>
+        </div>
+    </div>
+
     <div class="container">
         <header>
             <h1><i class="fas fa-user-shield"></i> KOKETI KURT & LOUNGE - Admin Panel</h1>
@@ -178,7 +201,7 @@
             </div>
         </div>
 
-        <!-- Bot Status & Broadcast Announcement Panel (ADDITION 1 & 2) -->
+        <!-- Bot Status & Broadcast Announcement Panel -->
         <div class="settings-panel">
             <h3 style="color: var(--gold); margin-bottom: 15px;"><i class="fas fa-bullhorn"></i> <span data-am="የቦት ማስታወቂያና ሁኔታ መቆጣጠሪያ" data-en="Bot Status & Broadcast Announcement">የቦት ማስታወቂያና ሁኔታ መቆጣጠሪያ</span></h3>
             <div class="settings-grid">
@@ -243,10 +266,17 @@
             <button class="btn btn-danger" style="margin-top: 10px;" onclick="notifyUnpaidMembers()"><i class="fas fa-bell"></i> <span data-am="ያልከፈሉ አባላትን በቴሌግራም አሳስብ" data-en="Remind Unpaid Members via Telegram">ያልከፈሉ አባላትን በቴሌግራም አሳስብ</span></button>
         </div>
 
-        <!-- Members Table -->
-        <h3 style="color: var(--gold); margin-bottom: 15px;"><i class="fas fa-list"></i> <span data-am="የአባላት ሙሉ ዝርዝር" data-en="Full Members List">የአባላት ሙሉ ዝርዝር</span></h3>
+        <!-- Members Table Section with Search -->
+        <div class="table-header">
+            <h3 style="color: var(--gold);"><i class="fas fa-list"></i> <span data-am="የአባላት ሙሉ ዝርዝር" data-en="Full Members List">የአባላት ሙሉ ዝርዝር</span></h3>
+            <div class="search-box">
+                <i class="fas fa-search" style="color: var(--gold);"></i>
+                <input type="text" id="memberSearchInput" onkeyup="filterMembers()" placeholder="በመዝገብ ቁጥር (Ref No)፣ ስም ፈልግ..." data-am-ph="በመዝገብ ቁጥር (Ref No)፣ ስም ፈልግ..." data-en-ph="Search by Ref No, Name...">
+            </div>
+        </div>
+
         <div class="table-container">
-            <table>
+            <table id="membersTable">
                 <thead>
                     <tr>
                         <th>Ref No</th>
@@ -407,6 +437,31 @@
             } catch(e) { alert(currentLanguage === 'am' ? "የይለፍ ቃል መቀየር አልተቻለም!" : "Failed to reset password!"); }
         }
 
+        // Search Filter Functionality
+        function filterMembers() {
+            const input = document.getElementById('memberSearchInput').value.toUpperCase();
+            const trs = document.querySelectorAll('#membersTableBody tr');
+
+            trs.forEach(tr => {
+                const text = tr.innerText.toUpperCase();
+                if (text.indexOf(input) > -1) {
+                    tr.style.display = "";
+                } else {
+                    tr.style.display = "none";
+                }
+            });
+        }
+
+        // Image Viewer Modal Functions
+        function openImageViewer(imgSrc) {
+            document.getElementById('modalReceiptImg').src = imgSrc;
+            document.getElementById('imageViewerModal').style.display = 'flex';
+        }
+
+        function closeImageViewer() {
+            document.getElementById('imageViewerModal').style.display = 'none';
+        }
+
         async function loadAdminData() {
             try {
                 const res = await fetch('/api/admin/members');
@@ -441,14 +496,18 @@
                     if (m.status === 'Approved') badgeClass = 'badge-approved';
                     if (m.status === 'Blocked' || m.status === 'Cancelled') badgeClass = 'badge-blocked';
 
-                    // Payment Receipt Logic (URL/Photo vs Reference Text) - ADDITION 3
-                    const activeReceiptUrl = m.weekly_receipt_url || m.receipt_url;
+                    // Payment Receipt Logic (Image File vs Reference Text)
+                    const activeReceiptUrl = m.weekly_receipt_url || m.receipt_url || (m.receipt_path && m.receipt_path !== '-' ? `/uploads/${m.receipt_path}` : null);
                     const activeReceiptRef = m.weekly_receipt_ref || m.receipt_ref || m.transaction_id;
                     
                     let paymentReceiptDisplay = '';
                     if (activeReceiptUrl) {
                         const viewTxt = currentLanguage === 'am' ? 'ደረሰኝ እይ' : 'View Receipt';
-                        paymentReceiptDisplay = `<a href="${activeReceiptUrl}" target="_blank" class="receipt-btn"><i class="fas fa-receipt"></i> ${viewTxt}</a>`;
+                        paymentReceiptDisplay = `
+                            <div style="display:flex; align-items:center; justify-content:center; gap:6px;">
+                                <img src="${activeReceiptUrl}" class="receipt-thumb" onclick="openImageViewer('${activeReceiptUrl}')" title="በትልቅ ለማየት ይጫኑ">
+                                <a href="${activeReceiptUrl}" target="_blank" class="receipt-btn"><i class="fas fa-external-link-alt"></i></a>
+                            </div>`;
                     } else if (activeReceiptRef) {
                         paymentReceiptDisplay = `<span class="receipt-text" title="Transaction ID / Ref"><i class="fas fa-hashtag"></i> ${activeReceiptRef}</span>`;
                     } else {
@@ -487,6 +546,9 @@
                     `;
                     tbody.appendChild(row);
                 });
+
+                // Apply filter if there is active text in search
+                filterMembers();
 
             } catch(e) { console.error(e); }
         }
