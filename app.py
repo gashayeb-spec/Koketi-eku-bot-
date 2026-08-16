@@ -1,15 +1,18 @@
 import os
 import sqlite3
 import requests
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='.')
 CORS(app)
 
 # የቴሌግራም ቦት እና የአድሚን መረጃዎች
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8932085001:AAFSuqyjALyhumCO-Y6RwfHlwz1HJaugevU")
 ADMIN_ID = os.environ.get("ADMIN_ID", "5351353727")
+
+# Render URL
+WEB_APP_URL = "https://koketi-eku-bot-1.onrender.com"
 
 # Render ላይ ዳታቤዙ እንዳይጠፋ የሚቀመጥበት መንገድ
 DB_PATH = os.environ.get("DB_PATH", "koketi_equb.db")
@@ -43,13 +46,15 @@ def init_db():
 
 init_db()
 
-def send_telegram_message(chat_id, text):
+def send_telegram_message(chat_id, text, reply_markup=None):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {
         "chat_id": chat_id,
         "text": text,
         "parse_mode": "HTML"
     }
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
     try:
         requests.post(url, json=payload, timeout=10)
     except Exception as e:
@@ -57,7 +62,29 @@ def send_telegram_message(chat_id, text):
 
 @app.route('/')
 def home():
-    return "KOKETI Kurt & Lounge Equb Server is Running Successfully!"
+    return send_from_directory('.', 'index.html')
+
+# የቴሌግራም Webhook መልእክቶችን መቀበያ endpoint
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    update = request.json
+    if update and "message" in update:
+        chat_id = update["message"]["chat"]["id"]
+        text = update["message"].get("text", "")
+
+        if text.startswith("/start"):
+            welcome_msg = (
+                "👋 <b>እንኳን ወደ KOKETI KURT & LOUNGE የዕቁብ አገልግሎት በሰላም መጡ!</b>\n\n"
+                "ከታች ያለውን <b>'📝 የዕቁብ መመዝገቢያ ፎርም'</b> የሚለውን ቁልፍ በመጫን መመዝገብና መረጃዎን መሙላት ይችላሉ።"
+            )
+            reply_markup = {
+                "inline_keyboard": [[
+                    {"text": "📝 የዕቁብ መመዝገቢያ ፎርም", "web_app": {"url": WEB_APP_URL}}
+                ]]
+            }
+            send_telegram_message(chat_id, welcome_msg, reply_markup)
+
+    return jsonify({"status": "ok"}), 200
 
 @app.route('/api/register', methods=['POST'])
 def register_equb():
@@ -116,7 +143,7 @@ def register_equb():
             )
             send_telegram_message(telegram_id, msg_user)
 
-        # 2. ለአድሚኑ (ላንተ) አዲስ ምዝገባ መኖሩን ማሳወቅ
+        # 2. ለአድሚኑ አዲስ ምዝገባ መኖሩን ማሳወቅ
         msg_admin = (
             f"🔔 <b>አዲስ የዕቁብ ምዝገባ ተከናውኗል!</b>\n\n"
             f"🆔 <b>Ref No:</b> {ref_no}\n"
