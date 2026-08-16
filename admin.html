@@ -87,7 +87,7 @@
         .badge-pending { background: rgba(245, 158, 11, 0.2); color: var(--gold); }
         .badge-blocked { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
 
-        .action-btns { display: flex; gap: 4px; justify-content: center; }
+        .action-btns { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
         .action-btns button { padding: 6px 8px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.8rem; }
 
         /* Receipts Image Preview Style */
@@ -157,7 +157,7 @@
         </div>
     </div>
 
-    <!-- Image Viewer Modal (FOR RECEIPT) -->
+    <!-- Image Viewer Modal -->
     <div id="imageViewerModal" class="modal" onclick="closeImageViewer()">
         <div style="position: relative; max-width: 90%; max-height: 90vh;">
             <img id="modalReceiptImg" src="" style="max-width: 100%; max-height: 85vh; border-radius: 8px; border: 2px solid var(--gold); display: block; margin: auto;">
@@ -346,18 +346,12 @@
 
         function switchLanguage(lang) {
             currentLanguage = lang;
-            
-            // Switch Text Content
             document.querySelectorAll('[data-' + lang + ']').forEach(el => {
                 el.innerText = el.getAttribute('data-' + lang);
             });
-
-            // Switch Placeholders
             document.querySelectorAll('[data-' + lang + '-ph]').forEach(el => {
                 el.placeholder = el.getAttribute('data-' + lang + '-ph');
             });
-
-            // Reload table to render dynamic content in selected language
             loadAdminData();
         }
 
@@ -437,7 +431,6 @@
             } catch(e) { alert(currentLanguage === 'am' ? "የይለፍ ቃል መቀየር አልተቻለም!" : "Failed to reset password!"); }
         }
 
-        // Search Filter Functionality
         function filterMembers() {
             const input = document.getElementById('memberSearchInput').value.toUpperCase();
             const trs = document.querySelectorAll('#membersTableBody tr');
@@ -452,7 +445,6 @@
             });
         }
 
-        // Image Viewer Modal Functions
         function openImageViewer(imgSrc) {
             document.getElementById('modalReceiptImg').src = imgSrc;
             document.getElementById('imageViewerModal').style.display = 'flex';
@@ -469,13 +461,11 @@
                 
                 const currency = currentLanguage === 'am' ? 'ብር' : 'ETB';
 
-                // Set Stats
                 document.getElementById('statTotalReg').innerText = data.stats.total_registered;
                 document.getElementById('statTotalApproved').innerText = data.stats.total_approved;
                 document.getElementById('statTotalPending').innerText = data.stats.total_pending;
                 document.getElementById('statTotalPaid').innerText = data.stats.total_paid_sum.toLocaleString() + " " + currency;
 
-                // Set Settings
                 if(data.settings) {
                     document.getElementById('drawNumberInput').value = data.settings.latest_draw_number || '';
                     document.getElementById('winnerNameInput').value = data.settings.winner_name || '';
@@ -488,7 +478,6 @@
                     }
                 }
 
-                // Populate Table
                 const tbody = document.getElementById('membersTableBody');
                 tbody.innerHTML = '';
                 data.members.forEach(m => {
@@ -496,13 +485,11 @@
                     if (m.status === 'Approved') badgeClass = 'badge-approved';
                     if (m.status === 'Blocked' || m.status === 'Cancelled') badgeClass = 'badge-blocked';
 
-                    // Payment Receipt Logic (Image File vs Reference Text)
                     const activeReceiptUrl = m.weekly_receipt_url || m.receipt_url || (m.receipt_path && m.receipt_path !== '-' ? `/uploads/${m.receipt_path}` : null);
                     const activeReceiptRef = m.weekly_receipt_ref || m.receipt_ref || m.transaction_id;
                     
                     let paymentReceiptDisplay = '';
                     if (activeReceiptUrl) {
-                        const viewTxt = currentLanguage === 'am' ? 'ደረሰኝ እይ' : 'View Receipt';
                         paymentReceiptDisplay = `
                             <div style="display:flex; align-items:center; justify-content:center; gap:6px;">
                                 <img src="${activeReceiptUrl}" class="receipt-thumb" onclick="openImageViewer('${activeReceiptUrl}')" title="በትልቅ ለማየት ይጫኑ">
@@ -519,6 +506,10 @@
                     const unpaidLabel = currentLanguage === 'am' ? '❌ አልተከፈለም' : '❌ Unpaid';
                     const shareTxt = currentLanguage === 'am' ? 'ዕጣ' : 'share';
                     const editTxt = currentLanguage === 'am' ? '⚙️ ማስተካከያ' : '⚙️ Edit';
+
+                    const approveTxt = currentLanguage === 'am' ? 'አጽድቅ' : 'Approve';
+                    const serviceTxt = currentLanguage === 'am' ? 'ሰርቪስ' : 'Service';
+                    const blockTxt = currentLanguage === 'am' ? 'አግድ' : 'Block';
 
                     const row = document.createElement('tr');
                     row.innerHTML = `
@@ -538,8 +529,9 @@
                             <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="openGuarantorModal(${m.id}, '${m.member_cheque}', '${m.guarantor_name}', '${m.guarantor_cheque}', '${m.collateral_item}')">${editTxt}</button>
                         </td>
                         <td class="action-btns">
-                            <button class="btn btn-success" onclick="changeStatus(${m.id}, 'Approved')" title="Approve"><i class="fas fa-check"></i></button>
-                            <button class="btn btn-danger" onclick="changeStatus(${m.id}, 'Blocked')" title="Block"><i class="fas fa-ban"></i></button>
+                            <button class="btn btn-success" style="padding: 4px 6px; font-size: 0.75rem;" onclick="changeStatus(${m.id}, 'Approved')" title="${approveTxt}">${approveTxt}</button>
+                            <button class="btn btn-info" style="padding: 4px 6px; font-size: 0.75rem;" onclick="changeStatus(${m.id}, 'Approved')" title="${serviceTxt}">${serviceTxt}</button>
+                            <button class="btn btn-danger" style="padding: 4px 6px; font-size: 0.75rem;" onclick="changeStatus(${m.id}, 'Blocked')" title="${blockTxt}">${blockTxt}</button>
                             <button class="btn btn-secondary" onclick="openMsgModal('${m.telegram_id}')" title="Send Message"><i class="fas fa-envelope"></i></button>
                             <button class="btn btn-danger" onclick="deleteMember(${m.id})" title="Delete"><i class="fas fa-trash"></i></button>
                         </td>
@@ -547,7 +539,6 @@
                     tbody.appendChild(row);
                 });
 
-                // Apply filter if there is active text in search
                 filterMembers();
 
             } catch(e) { console.error(e); }
@@ -612,11 +603,15 @@
         }
 
         async function togglePayment(id, status) {
-            await fetch(`/api/admin/toggle_payment/${id}`, {
+            const res = await fetch(`/api/admin/toggle_payment/${id}`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({weekly_paid_status: status})
             });
+            const data = await res.json();
+            if (data.status === 'already_approved') {
+                alert(currentLanguage === 'am' ? "⚠️ ይህ ክፍያ አስቀድሞ ጸድቋል!" : "⚠️ Payment already approved!");
+            }
             loadAdminData();
         }
 
