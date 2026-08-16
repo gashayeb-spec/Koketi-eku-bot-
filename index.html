@@ -47,8 +47,6 @@
 
     <div class="stats-bar">
         👥 <b>የተመዘገቡ አባላት፦</b> <span id="public_count" style="color:#38bdf8; font-weight:bold;">0</span> / <span id="public_max">100</span>
-        <br>
-        📅 <b>የአሁኑ የእቁብ ዙር፦</b> <span id="current_week_display" style="color:#f59e0b; font-weight:bold;">1ኛ ሳምንት</span>
     </div>
 
     <!-- 1. የዕቁብ ደብተር ገጽ -->
@@ -188,6 +186,7 @@
     if (tg) tg.expand();
     const telegram_id = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : '';
 
+    // Extract Referral Parameter if opened via referral link
     const urlParams = new URLSearchParams(window.location.search);
     const refCode = urlParams.get('ref') || '-';
 
@@ -211,7 +210,7 @@
     function getLocation() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                p => document.getElementById('gps_location').value = `${p.coords.latitude.toFixed(5)},${p.coords.longitude.toFixed(5)}`,
+                p => document.getElementById('gps_location').value = `${p.coords.latitude.toFixed(5)}, ${p.coords.longitude.toFixed(5)}`,
                 () => alert('GPS መውሰድ አልተቻለም።')
             );
         }
@@ -228,7 +227,7 @@
     }
 
     function copyReferralLink(refNo) {
-        const botUsername = 'koketi_eku_bot';
+        const botUsername = 'koketi_eku_bot'; // Replace if username changes
         const link = `https://t.me/${botUsername}?start=ref_${refNo}`;
         navigator.clipboard.writeText(link).then(() => {
             alert(`🔗 የሪፈራል ሊንክዎ ተቀድቷል (Copied)!\n\n${link}\n\nይህንን ሊንክ ለጓደኛዎ በመላክ መጋበዝ ይችላሉ።`);
@@ -245,10 +244,6 @@
                 const data = await res.json();
                 document.getElementById('public_count').innerText = data.total_approved;
                 document.getElementById('public_max').innerText = data.settings.max_members || 100;
-                
-                if (data.settings && data.settings.current_week) {
-                    document.getElementById('current_week_display').innerText = data.settings.current_week + 'ኛ ሳምንት';
-                }
 
                 const container = document.getElementById('accountsContainer');
                 const selectAcc = document.getElementById('select_member_account');
@@ -261,14 +256,16 @@
                             ? '<span class="status-pill paid">✅ የዚህ ሳምንት ተከፍሏል</span>' 
                             : '<span class="status-pill unpaid">❌ የዚህ ሳምንት አልተከፈለም</span>';
 
+                        const targetAmount = (m.cycle_amount || 5000) * (m.share_count || 1);
+
                         container.innerHTML += `
                             <div class="user-profile-badge">
                                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                                    <span style="color:#38bdf8; font-weight:bold;">👤 ${m.first_name}${m.father_name}</span>
+                                    <span style="color:#38bdf8; font-weight:bold;">👤 ${m.first_name} ${m.father_name}</span>
                                     <span style="color:#f59e0b; font-size:12px;">Ref: ${m.ref_no}</span>
                                 </div>
                                 <div style="margin-top:8px; font-size:12px; color:#cbd5e1;">
-                                    🎲 ዕጣ: <b>${m.share_count}</b> \vert{} 📌 ሁኔታ: <b>${m.status}</b>
+                                    🎲 ዕጣ: <b>${m.share_count}</b> | 📌 ሁኔታ: <b>${m.status}</b>
                                 </div>
                                 <div style="margin-top:4px; font-size:12px; color:#94a3b8;">
                                     💵 የተከፈለ፦ <b style="color:#22c55e;">${(m.paid_amount || 0).toLocaleString()} ብር</b>
