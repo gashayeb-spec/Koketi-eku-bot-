@@ -1,348 +1,336 @@
 <!DOCTYPE html>
 <html lang="am">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KOKETI KURT & LOUNGE - የዕቁብ ገጽ</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<style>
-    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 15px; margin: 0; padding-bottom: 70px; }
-    .card { background-color: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; max-width: 500px; margin: 0 auto; }
-    h2 { color: #38bdf8; text-align: center; margin-top: 0; font-size: 20px; }
-    p.sub { color: #94a3b8; text-align: center; font-size: 13px; margin-bottom: 15px; }
-    .form-group { margin-bottom: 14px; }
-    label { display: block; margin-bottom: 6px; font-size: 13px; color: #cbd5e1; font-weight: 500; }
-    input, select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #475569; background-color: #0f172a; color: #ffffff; box-sizing: border-box; font-size: 14px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .btn-gps { background-color: #0284c7; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 12px; margin-top: 4px; width: 100%; }
-    .btn-submit, .btn-upload { background-color: #22c55e; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; margin-top: 15px; }
-    .btn-ref { background-color: #8b5cf6; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold; margin-top: 8px; width: 100%; }
-    .section-title { color: #f59e0b; font-size: 14px; border-bottom: 1px solid #334155; padding-bottom: 4px; margin-top: 15px; margin-bottom: 12px; font-weight: bold; }
-    
-    #closedNotice { display: none; text-align: center; padding: 25px 15px; }
-    #closedNotice h3 { color: #ef4444; margin-top: 0; font-size: 22px; }
-    
-    .file-input-wrapper { background: #0f172a; border: 1px dashed #38bdf8; padding: 15px; border-radius: 8px; text-align: center; margin-top: 5px; }
-    .file-input-wrapper input[type=file] { display: none; }
-    .btn-file { background: #38bdf8; color: #0f172a; padding: 8px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; display: inline-block; font-size: 13px; }
-    .user-profile-badge { background: #0f172a; border: 1px solid #334155; padding: 12px; border-radius: 8px; margin-bottom: 12px; }
-    .stats-bar { background: #0f172a; border-radius: 8px; padding: 10px; margin-bottom: 15px; font-size: 12px; text-align: center; border: 1px solid #334155; }
-    
-    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; border-top: 1px solid #334155; display: flex; justify-around: space-around; padding: 8px 0; z-index: 100; }
-    .nav-item { color: #94a3b8; text-decoration: none; text-align: center; font-size: 11px; flex: 1; cursor: pointer; }
-    .nav-item.active { color: #38bdf8; font-weight: bold; }
-    .nav-item div { font-size: 18px; margin-bottom: 2px; }
-    
-    .status-pill { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; }
-    .paid { background: #22c55e22; color: #22c55e; border: 1px solid #22c55e; }
-    .unpaid { background: #ef444422; color: #ef4444; border: 1px solid #ef4444; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KOKETI KURT & LOUNGE - Digital Equb</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --gold: #f59e0b;
+            --gold-light: #fbbf24;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.1);
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg); color: var(--text); padding: 12px; padding-bottom: 40px; }
+        .container { max-width: 500px; margin: 0 auto; }
+
+        .header-card {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid var(--gold); border-radius: 16px; padding: 20px; text-align: center;
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.15); margin-bottom: 20px;
+        }
+        .header-card h1 { color: var(--gold); font-size: 1.4rem; font-weight: bold; margin-bottom: 5px; }
+        .header-card p { color: var(--text-muted); font-size: 0.85rem; }
+
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+        .tab-btn {
+            flex: 1; padding: 12px; background: var(--card); border: 1px solid var(--border);
+            color: var(--text-muted); border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.3s;
+        }
+        .tab-btn.active { background: var(--gold); color: #0f172a; border-color: var(--gold); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .form-card, .info-card {
+            background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 15px;
+        }
+        .input-group { margin-bottom: 14px; }
+        .input-group label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; }
+        .input-group input, .input-group select {
+            width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border);
+            border-radius: 8px; color: var(--text); outline: none; font-size: 0.95rem;
+        }
+        .input-group input:focus { border-color: var(--gold); }
+
+        .btn {
+            width: 100%; padding: 14px; background: var(--gold); color: #0f172a; border: none;
+            border-radius: 10px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.3s;
+        }
+        .btn:hover { background: var(--gold-light); }
+
+        .member-book {
+            border: 1px dashed var(--gold); border-radius: 12px; padding: 15px; margin-bottom: 15px; background: rgba(245, 158, 11, 0.03);
+        }
+        .book-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; }
+        .book-row .label { color: var(--text-muted); }
+        .book-row .value { font-weight: bold; }
+
+        .file-upload {
+            border: 2px dashed var(--border); border-radius: 8px; padding: 15px; text-align: center; cursor: pointer;
+        }
+        .file-upload input { display: none; }
+
+        .alert { padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 0.85rem; }
+        .alert-info { background: rgba(245, 158, 11, 0.1); border: 1px solid var(--gold); color: var(--gold); }
+    </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>🍷 KOKETI KURT & LOUNGE</h2>
-    <p class="sub">የዲጂታል ዕቁብ አባላት ገጽ</p>
-
-    <div class="stats-bar">
-        👥 <b>የተመዘገቡ አባላት፦</b> <span id="public_count" style="color:#38bdf8; font-weight:bold;">0</span> / <span id="public_max">100</span>
-    </div>
-
-    <!-- Tab 1: Member Dashboard -->
-    <div id="tab-book" class="tab-content">
-        <div class="section-title">📖 የኔ የዕቁብ ደብተር (አካውንቶች)</div>
-        <div id="accountsContainer">መረጃዎችን በመጫን ላይ...</div>
-    </div>
-
-    <!-- Tab 2: Upload Payment -->
-    <div id="tab-payment" class="tab-content" style="display:none;">
-        <div class="section-title">🧾 የሳምንታዊ ክፍያ ስክሪንሹት መላኪያ</div>
-        <form id="weeklyPaymentForm">
-            <div class="form-group">
-                <label>ክፍያ የሚልኩበትን አካውንት ይምረጡ*</label>
-                <select id="select_member_account" required></select>
-            </div>
-            <div class="file-input-wrapper">
-                <label for="weekly_receipt" class="btn-file">📸 የስክሪንሹት ፎቶ ይምረጡ</label>
-                <input type="file" id="weekly_receipt" accept="image/*" onchange="updateWeeklyFileName(this)" required>
-                <span id="weeklyFileName" style="display:block; font-size:12px; color:#cbd5e1; margin-top:8px;">ምንም ፋይል አልተመረጠም</span>
-            </div>
-            <button type="submit" id="uploadWeeklyBtn" class="btn-upload">📤 ስክሪንሹቱን ለአድሚን ላክ</button>
-        </form>
-    </div>
-
-    <!-- Tab 3: New Registration -->
-    <div id="tab-register" class="tab-content" style="display:none;">
-        <div id="closedNotice">
-            <h3>🚫 የምዝገባ ሂደቱ ተጠናቋል!</h3>
-            <p>ለጊዜው ለዚህ ዙር የተያዘው የምዝገባ ቦታ ስለሞላ አዳዲስ አባላትን መቀበል አይቻልም።</p>
+    <div class="container">
+        <div class="header-card">
+            <i class="fas fa-crown" style="font-size: 2.5rem; color: var(--gold); margin-bottom: 8px;"></i>
+            <h1>KOKETI KURT & LOUNGE</h1>
+            <p>ዲጂታል የዕቁብ መዝገብና የደብተር አገልግሎት</p>
         </div>
 
-        <form id="equbForm">
-            <div class="section-title">📝 አዲስ መመዝገቢያ ፎርም</div>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('dashboardTab')"><i class="fas fa-book-open"></i> የኔ ደብተር</button>
+            <button class="tab-btn" onclick="switchTab('registerTab')"><i class="fas fa-user-plus"></i> አዲስ ምዝገባ</button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboardTab" class="tab-content active">
+            <div id="drawInfoCard" class="info-card" style="border-color: var(--gold);">
+                <h3 style="color: var(--gold); font-size: 1rem; margin-bottom: 10px;"><i class="fas fa-trophy"></i> የሳምንቱ የዕጣ መረጃ</h3>
+                <div class="book-row"><span class="label">የወጣው ዕጣ ቁጥር፦</span><span class="value" id="latestDrawNum">-</span></div>
+                <div class="book-row"><span class="label">የዕጣው ባለቤት፦</span><span class="value" id="latestWinner">-</span></div>
+                <div class="book-row"><span class="label">ቀን፦</span><span class="value" id="latestDrawDate">-</span></div>
+            </div>
+
+            <div id="myMembersContainer">
+                <!-- User's Registered Equbs -->
+            </div>
+
+            <!-- Weekly Receipt Upload Card -->
+            <div id="weeklyUploadCard" class="form-card" style="display: none;">
+                <h3 style="color: var(--gold); font-size: 1rem; margin-bottom: 10px;"><i class="fas fa-receipt"></i> የሳምንታዊ ክፍያ ስክሪንሹት መላኪያ</h3>
+                <form id="weeklyReceiptForm">
+                    <div class="input-group">
+                        <label>የሚከፍሉበት አካውንት ይምረጡ</label>
+                        <select id="weeklyMemberSelect" required></select>
+                    </div>
+                    <div class="input-group">
+                        <label>የክፍያ ደረሰኝ/ስክሪንሹት</label>
+                        <div class="file-upload" onclick="document.getElementById('weeklyFile').click()">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 1.5rem; color: var(--gold);"></i>
+                            <p id="weeklyFileName" style="font-size: 0.8rem; margin-top: 5px;">ፋይል ለመምረጥ እዚህ ይጫኑ</p>
+                            <input type="file" id="weeklyFile" accept="image/*" required onchange="updateFileName(this, 'weeklyFileName')">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn">ስክሪንሹቱን ለአድሚኑ ላክ</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Registration Tab -->
+        <div id="registerTab" class="tab-content">
+            <div id="regStatusAlert" class="alert alert-info" style="display: none;"></div>
+
+            <div class="form-card">
+                <form id="registrationForm">
+                    <input type="hidden" id="telegramIdInput">
+                    <input type="hidden" id="refNoInput">
+
+                    <div class="input-group">
+                        <label>ስም (First Name)</label>
+                        <input type="text" id="firstName" required>
+                    </div>
+                    <div class="input-group">
+                        <label>የአባት ስም (Father's Name)</label>
+                        <input type="text" id="fatherName" required>
+                    </div>
+                    <div class="input-group">
+                        <label>የአያት ስም (Grandfather's Name)</label>
+                        <input type="text" id="grandName" required>
+                    </div>
+                    <div class="input-group">
+                        <label>ስልክ ቁጥር</label>
+                        <input type="tel" id="phoneNumber" placeholder="09..." required>
+                    </div>
+                    <div class="input-group">
+                        <label>ክልል / ከተማ</label>
+                        <input type="text" id="regionSelect" placeholder="ምሳሌ፦ ሀዋሳ" required>
+                    </div>
+                    <div class="input-group">
+                        <label>የዕጣ ብዛት (Share Count)</label>
+                        <input type="number" id="shareCount" value="1" min="1" required onchange="calculateTotal()">
+                    </div>
+                    <div class="input-group">
+                        <label>የአንዱ ዕጣ ሳምንታዊ ክፍያ</label>
+                        <select id="cycleAmount" onchange="calculateTotal()">
+                            <option value="5000">5,000 ብር</option>
+                            <option value="10000">10,000 ብር</option>
+                            <option value="20000">20,000 ብር</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>ጠቅላላ የሳምንት ክፍያዎት፦ <b id="totalCalc" style="color: var(--gold);">5,000 ብር</b></label>
+                    </div>
+                    <div class="input-group">
+                        <label>የክፍያ መንገድ</label>
+                        <select id="paymentMethod">
+                            <option value="CBE">የኢትዮጵያ ንግድ ባንክ (CBE)</option>
+                            <option value="Telebirr">ቴሌብር (Telebirr)</option>
+                            <option value="BOA">አቢሲንያ ባንክ (BOA)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>የመጀመሪያ ክፍያ ደረሰኝ (ስክሪንሹት)</label>
+                        <div class="file-upload" onclick="document.getElementById('regReceipt').click()">
+                            <i class="fas fa-file-invoice" style="font-size: 1.5rem; color: var(--gold);"></i>
+                            <p id="regFileName" style="font-size: 0.8rem; margin-top: 5px;">የክፍያ ደረሰኝ ያያይዙ</p>
+                            <input type="file" id="regReceipt" accept="image/*" required onchange="updateFileName(this, 'regFileName')">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>የጋበዘዎት ሰው መለያ (Optional Referral)</label>
+                        <input type="text" id="referredBy" placeholder="የሪፈራል ኮድ">
+                    </div>
+
+                    <button type="submit" class="btn" id="regBtn">የምዝገባ ጥያቄ ላክ</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram ? window.Telegram.WebApp : null;
+        if(tg) tg.expand();
+
+        const telegramId = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id.toString() : "";
+        document.getElementById('telegramIdInput').value = telegramId;
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             
-            <div id="refAlertBox" style="display:none; background:#8b5cf622; border:1px solid #8b5cf6; padding:8px; border-radius:6px; font-size:12px; color:#c084fc; margin-bottom:12px;">
-                🔗 በሪፈራል ሊንክ መዝገብ ቁጥር፦ <b id="refCodeDisplay">-</b> ተጋብዘዋል!
-            </div>
-
-            <div class="form-group">
-                <label>የመዝገብ/አባል ቁጥር (Ref No)*</label>
-                <input type="text" id="ref_no" readonly style="background-color: #334155; font-weight: bold; color: #38bdf8;">
-            </div>
-
-            <div class="form-group">
-                <label>ስም (First Name)*</label>
-                <input type="text" id="first_name" required placeholder="የእርስዎን ስም ያስገቡ">
-            </div>
-
-            <div class="grid">
-                <div class="form-group">
-                    <label>የአባት ስም*</label>
-                    <input type="text" id="father_name" required placeholder="የአባት ስም">
-                </div>
-                <div class="form-group">
-                    <label>የአያት ስም*</label>
-                    <input type="text" id="grand_name" required placeholder="የአያት ስም">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>የስልክ ቁጥር*</label>
-                <input type="tel" id="phone_number" required placeholder="09........">
-            </div>
-
-            <div class="form-group">
-                <label>ክልል / ከተማ*</label>
-                <select id="region_select" required>
-                    <option value="">-- ይምረጡ --</option>
-                    <option value="ሲዳማ (ሀዋሳ)">ሲዳማ (ሀዋሳ)</option>
-                    <option value="አዲስ አበባ">አዲስ አበባ</option>
-                    <option value="ኦሮሚያ">ኦሮሚያ</option>
-                    <option value="አማራ">አማራ</option>
-                    <option value="ደቡብ ኢትዮጵያ">ደቡብ ኢትዮጵያ</option>
-                    <option value="ሌላ">ሌላ</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>ትክክለኛ የመኖሪያ ቦታ (GPS Location)</label>
-                <input type="text" id="gps_location" placeholder="GPS አድራሻ" readonly>
-                <button type="button" class="btn-gps" onclick="getLocation()">📍 አሁን ያሉበትን ቦታ በ GPS ያግኙ</button>
-            </div>
-
-            <div class="grid">
-                <div class="form-group">
-                    <label>የዕጣ ብዛት*</label>
-                    <select id="share_count" required>
-                        <option value="1">1 ዕጣ</option>
-                        <option value="2">2 ዕጣ</option>
-                        <option value="3">3 ዕጣ</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>የአንድ ዕጣ ዙር (ብር)*</label>
-                    <input type="number" id="cycle_amount" value="5000" required>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>የክፍያ አማራጭ*</label>
-                <select id="payment_method" required>
-                    <option value="ንግድ ባንክ (CBE)">የኢትዮጵያ ንግድ ባንክ (CBE)</option>
-                    <option value="ቴሌብር (telebirr)">ቴሌብር (telebirr)</option>
-                    <option value="አዋሽ ባንክ (Awash)">አዋሽ ባንክ</option>
-                    <option value="አቢሲኒያ ባንክ (Abyssinia)">አቢሲኒያ ባንክ</option>
-                    <option value="በእጅ/በጥሬ ገንዘብ">በእጅ (በጥሬ ገንዘብ)</option>
-                </select>
-            </div>
-
-            <div class="file-input-wrapper">
-                <label for="receipt_file" class="btn-file">📸 የመመዝገቢያ ስክሪንሹት</label>
-                <input type="file" id="receipt_file" accept="image/*" onchange="updateFileName(this)">
-                <span id="fileName" style="display:block; font-size:11px; color:#cbd5e1; margin-top:5px;">ምንም ፋይል አልተመረጠም</span>
-            </div>
-
-            <button type="submit" id="submitBtn" class="btn-submit">🚀 ምዝገባውን አጠናቅቅ</button>
-        </form>
-    </div>
-</div>
-
-<div class="bottom-nav">
-    <div class="nav-item active" onclick="switchTab('tab-book', this)">
-        <div>📖</div>ደብተር
-    </div>
-    <div class="nav-item" onclick="switchTab('tab-payment', this)">
-        <div>🧾</div>ክፍያ ላክ
-    </div>
-    <div class="nav-item" onclick="switchTab('tab-register', this)">
-        <div>➕</div>አዲስ ምዝገባ
-    </div>
-</div>
-
-<script>
-    const tg = window.Telegram ? window.Telegram.WebApp : null;
-    if (tg) tg.expand();
-    const telegram_id = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.id : '';
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const refCode = urlParams.get('ref') || '-';
-
-    if (refCode !== '-') {
-        document.getElementById('refAlertBox').style.display = 'block';
-        document.getElementById('refCodeDisplay').innerText = refCode;
-    }
-
-    function switchTab(tabId, el) {
-        document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
-        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        document.getElementById(tabId).style.display = 'block';
-        if (el) el.classList.add('active');
-    }
-
-    function generateRefNo() {
-        document.getElementById('ref_no').value = 'KOK-' + Math.floor(1000 + Math.random() * 9000);
-    }
-    generateRefNo();
-
-    function getLocation() {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                p => document.getElementById('gps_location').value = `${p.coords.latitude.toFixed(5)}, ${p.coords.longitude.toFixed(5)}`,
-                () => alert('GPS መውሰድ አልተቻለም።')
-            );
+            event.currentTarget.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
         }
-    }
 
-    function updateFileName(input) {
-        const span = document.getElementById('fileName');
-        if(input.files && input.files[0]) { span.innerText = '✅ ' + input.files[0].name; span.style.color = '#22c55e'; }
-    }
+        function generateRefNo() {
+            return 'KQT-' + Math.floor(100000 + Math.random() * 900000);
+        }
 
-    function updateWeeklyFileName(input) {
-        const span = document.getElementById('weeklyFileName');
-        if(input.files && input.files[0]) { span.innerText = '✅ ' + input.files[0].name; span.style.color = '#22c55e'; }
-    }
+        function calculateTotal() {
+            const count = parseInt(document.getElementById('shareCount').value) || 1;
+            const amount = parseFloat(document.getElementById('cycleAmount').value) || 5000;
+            document.getElementById('totalCalc').innerText = (count * amount).toLocaleString() + " ብር";
+        }
 
-    function copyReferralLink(refNo) {
-        const botUsername = 'koketi_eku_bot';
-        const link = `https://t.me/${botUsername}?start=ref_${refNo}`;
-        navigator.clipboard.writeText(link).then(() => {
-            alert(`🔗 የሪፈራል ሊንክዎ ተቀድቷል (Copied)!\n\n${link}\n\nይህንን ሊንክ ለጓደኛዎ በመላክ መጋበዝ ይችላሉ።`);
-        }).catch(() => {
-            alert(`የሪፈራል ሊንክ፦\n${link}`);
-        });
-    }
+        function updateFileName(input, targetId) {
+            if(input.files && input.files[0]) {
+                document.getElementById(targetId).innerText = input.files[0].name;
+            }
+        }
 
-    async function loadUserData() {
-        if (!telegram_id) return;
-        try {
-            const res = await fetch('/api/member_info/' + telegram_id + '?t=' + new Date().getTime());
-            if (res.ok) {
+        async function loadUserData() {
+            if(!telegramId) return;
+            try {
+                const res = await fetch(`/api/member_info/${telegramId}`);
                 const data = await res.json();
-                document.getElementById('public_count').innerText = data.total_approved;
-                document.getElementById('public_max').innerText = data.settings.max_members || 100;
 
-                const container = document.getElementById('accountsContainer');
-                const selectAcc = document.getElementById('select_member_account');
+                // Set Draw Info
+                if(data.settings) {
+                    document.getElementById('latestDrawNum').innerText = data.settings.latest_draw_number || 'አልወጣም';
+                    document.getElementById('latestWinner').innerText = data.settings.winner_name || '-';
+                    document.getElementById('latestDrawDate').innerText = data.settings.latest_draw_date || '-';
+
+                    if(data.settings.registration_status === 'CLOSED') {
+                        document.getElementById('regBtn').disabled = true;
+                        document.getElementById('regBtn').innerText = "ምዝገባ ለጊዜው ተዘግቷል";
+                    }
+                }
+
+                // Populate User Accounts
+                const container = document.getElementById('myMembersContainer');
+                const select = document.getElementById('weeklyMemberSelect');
                 container.innerHTML = '';
-                selectAcc.innerHTML = '';
+                select.innerHTML = '';
 
-                if (data.members && data.members.length > 0) {
+                if(data.members && data.members.length > 0) {
+                    document.getElementById('weeklyUploadCard').style.display = 'block';
+
                     data.members.forEach(m => {
-                        const paidStatus = m.weekly_paid_status === 1 
-                            ? '<span class="status-pill paid">✅ የዚህ ሳምንት ተከፍሏል</span>' 
-                            : '<span class="status-pill unpaid">❌ የዚህ ሳምንት አልተከፈለም</span>';
+                        const option = document.createElement('option');
+                        option.value = m.id;
+                        option.innerText = `${m.first_name} (${m.ref_no})`;
+                        select.appendChild(option);
 
-                        container.innerHTML += `
-                            <div class="user-profile-badge">
-                                <div style="display:flex; justify-content:space-between; align-items:center;">
-                                    <span style="color:#38bdf8; font-weight:bold;">👤 ${m.first_name} ${m.father_name}</span>
-                                    <span style="color:#f59e0b; font-size:12px;">Ref: ${m.ref_no}</span>
-                                </div>
-                                <div style="margin-top:8px; font-size:12px; color:#cbd5e1;">
-                                    🎲 ዕጣ: <b>${m.share_count}</b> | 📌 ሁኔታ: <b>${m.status}</b>
-                                </div>
-                                <div style="margin-top:4px; font-size:12px; color:#94a3b8;">
-                                    💵 የተከፈለ፦ <b style="color:#22c55e;">${(m.paid_amount || 0).toLocaleString()} ብር</b>
-                                </div>
-                                <div style="margin-top:8px;">${paidStatus}</div>
-                                <button class="btn-ref" onclick="copyReferralLink('${m.ref_no}')">🔗 የዚህ አካውንት ሪፈራል ሊንክ ኮፒ አድርግ</button>
-                            </div>
+                        const card = document.createElement('div');
+                        card.className = 'member-book';
+                        card.innerHTML = `
+                            <div class="book-row"><span class="label">የመዝገብ ቁጥር (Ref):</span><span class="value" style="color:var(--gold);">${m.ref_no}</span></div>
+                            <div class="book-row"><span class="label">ስም:</span><span class="value">${m.first_name} ${m.father_name}</span></div>
+                            <div class="book-row"><span class="label">የምዝገባ ሁኔታ:</span><span class="value" style="color:${m.status === 'Approved' ? 'var(--success)' : 'var(--gold)'};">${m.status}</span></div>
+                            <div class="book-row"><span class="label">የዚህ ሳምንት ክፍያ:</span><span class="value">${m.weekly_paid_status === 1 ? '✅ ተከፍሏል' : '❌ አልተከፈለም'}</span></div>
+                            <div class="book-row"><span class="label">ጠቅላላ የተከፈለ:</span><span class="value">${m.paid_amount.toLocaleString()} ብር</span></div>
                         `;
-                        selectAcc.innerHTML += `<option value="${m.id}">${m.first_name} - ${m.ref_no} (${m.share_count} ዕጣ)</option>`;
+                        container.appendChild(card);
                     });
                 } else {
-                    container.innerHTML = '<p style="text-align:center; color:#94a3b8; font-size:13px;">ምንም የተመዘገበ የዕቁብ አካውንት አልተገኘም።</p>';
+                    container.innerHTML = `<div class="alert alert-info">እስካሁን የተመዘገበ አካውንት የለዎትም። በአዲስ ምዝገባ ገጽ መመዝገብ ይችላሉ።</div>`;
                 }
 
-                if (data.settings.registration_status === 'CLOSED' || data.total_approved >= (data.settings.max_members || 100)) {
-                    document.getElementById('equbForm').style.display = 'none';
-                    document.getElementById('closedNotice').style.display = 'block';
+            } catch(e) { console.error(e); }
+        }
+
+        document.getElementById('registrationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('regBtn');
+            btn.disabled = true;
+            btn.innerText = "እየተላከ ነው...";
+
+            const formData = new FormData();
+            formData.append('ref_no', generateRefNo());
+            formData.append('telegram_id', telegramId);
+            formData.append('first_name', document.getElementById('firstName').value);
+            formData.append('father_name', document.getElementById('fatherName').value);
+            formData.append('grand_name', document.getElementById('grandName').value);
+            formData.append('phone_number', document.getElementById('phoneNumber').value);
+            formData.append('region_select', document.getElementById('regionSelect').value);
+            formData.append('share_count', document.getElementById('shareCount').value);
+            formData.append('cycle_amount', document.getElementById('cycleAmount').value);
+            formData.append('payment_method', document.getElementById('paymentMethod').value);
+            formData.append('referred_by', document.getElementById('referredBy').value || '-');
+            formData.append('receipt', document.getElementById('regReceipt').files[0]);
+
+            try {
+                const res = await fetch('/api/register', { method: 'POST', body: formData });
+                const data = await res.json();
+                if(res.ok) {
+                    alert("የምዝገባ ጥያቄዎ በተሳካ ሁኔታ ለአድሚኑ ተልኳል!");
+                    location.reload();
+                } else {
+                    alert(data.message || "ምዝገባው አልተሳካም");
+                    btn.disabled = false;
+                    btn.innerText = "የምዝገባ ጥያቄ ላክ";
                 }
+            } catch(err) {
+                alert("የሰርቨር ችግር አጋጥሟል!");
+                btn.disabled = false;
+                btn.innerText = "የምዝገባ ጥያቄ ላክ";
             }
-        } catch (e) {}
-    }
+        });
 
-    loadUserData();
+        document.getElementById('weeklyReceiptForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('member_id', document.getElementById('weeklyMemberSelect').value);
+            formData.append('receipt', document.getElementById('weeklyFile').files[0]);
 
-    document.getElementById('equbForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const submitBtn = document.getElementById('submitBtn');
-        submitBtn.disabled = true; submitBtn.innerText = 'በመላክ ላይ...';
+            try {
+                const res = await fetch('/api/upload_weekly_receipt', { method: 'POST', body: formData });
+                const data = await res.json();
+                if(res.ok) {
+                    alert("የሳምንቱ ክፍያ ስክሪንሹት ለአድሚኑ ተልኳል!");
+                    location.reload();
+                } else {
+                    alert(data.message);
+                }
+            } catch(err) { alert("መላክ አልተቻለም!"); }
+        });
 
-        const formData = new FormData();
-        formData.append('ref_no', document.getElementById('ref_no').value);
-        formData.append('telegram_id', telegram_id);
-        formData.append('first_name', document.getElementById('first_name').value);
-        formData.append('father_name', document.getElementById('father_name').value);
-        formData.append('grand_name', document.getElementById('grand_name').value);
-        formData.append('phone_number', document.getElementById('phone_number').value);
-        formData.append('region_select', document.getElementById('region_select').value);
-        formData.append('gps_location', document.getElementById('gps_location').value);
-        formData.append('share_count', document.getElementById('share_count').value);
-        formData.append('cycle_amount', document.getElementById('cycle_amount').value);
-        formData.append('payment_method', document.getElementById('payment_method').value);
-        formData.append('referred_by', refCode);
-
-        const receiptInput = document.getElementById('receipt_file');
-        if (receiptInput.files[0]) formData.append('receipt', receiptInput.files[0]);
-
-        try {
-            const response = await fetch('/api/register', { method: 'POST', body: formData });
-            if (response.ok) {
-                alert('🎉 ምዝገባዎ ተጠናቅቋል! አድሚኑ ሲያጸድቀው በደብተርዎ ላይ ይታያል።');
-                generateRefNo();
-                loadUserData();
-                switchTab('tab-book');
-            } else { alert('ምዝገባው አልተሳካም።'); }
-        } catch (error) { alert('የኔትወርክ ስህተት!'); }
-        finally { submitBtn.disabled = false; submitBtn.innerText = '🚀 ምዝገባውን አጠናቅቅ'; }
-    });
-
-    document.getElementById('weeklyPaymentForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const uploadBtn = document.getElementById('uploadWeeklyBtn');
-        const fileInput = document.getElementById('weekly_receipt');
-        const memberId = document.getElementById('select_member_account').value;
-
-        if (!fileInput.files[0]) { alert('እባክዎን ፋይል ይምረጡ!'); return; }
-        uploadBtn.disabled = true; uploadBtn.innerText = 'በመላክ ላይ...';
-
-        const formData = new FormData();
-        formData.append('member_id', memberId);
-        formData.append('receipt', fileInput.files[0]);
-
-        try {
-            const res = await fetch('/api/upload_weekly_receipt', { method: 'POST', body: formData });
-            if (res.ok) {
-                alert('✅ ስክሪንሹቱ ለአድሚኑ ተልኳል!');
-                fileInput.value = '';
-                document.getElementById('weeklyFileName').innerText = 'ምንም ፋይል አልተመረጠም';
-                loadUserData();
-            } else { alert('መላክ አልተሳካም'); }
-        } catch (err) { alert('የኔትወርክ ስህተት!'); }
-        finally { uploadBtn.disabled = false; uploadBtn.innerText = '📤 ስክሪንሹቱን ለአድሚን ላክ'; }
-    });
-</script>
+        loadUserData();
+    </script>
 </body>
 </html>
