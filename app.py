@@ -142,10 +142,10 @@ def is_strong_password(password):
         return False
     return True
 
-# Persistent Reply Keyboard Generator (የተቀነሰ ናቪጌሽን)
+# Persistent Reply Keyboard Generator
 def get_persistent_reply_keyboard(is_admin=False):
     keyboard_buttons = [
-        [{"text": "💳 ሳምንታዊ ክፍያ ፈፅም"}]
+        [{"text": "💳 ሳምንታዊ ክፍያ ፈፅም"}, {"text": "📞 ድጋፍ"}]
     ]
     if is_admin:
         keyboard_buttons.append([{"text": "⚙️ የአድሚን መቆጣጠሪያ ፓናል"}])
@@ -361,9 +361,19 @@ def webhook():
             send_telegram_message(chat_id, msg, p_key)
             send_telegram_message(chat_id, "👇 ከታች ያለውን አዝራር በመጫን የዕቁብ አፕሊኬሽኑን መክፈት ይችላሉ፦", inline_key)
 
-        elif text == "💳 ሳምንታዊ ክፍያ ፈፅም":
+        elif text in ["💳 ሳምንታዊ ክፍያ ፈፅም", "ሳምንታዊ ክፍያ ፈፅም"]:
             inline_key = {"inline_keyboard": [[{"text": "💳 ክፍያ ለመክፈል አፑን ክፈት", "web_app": {"url": WEB_APP_URL}}]]}
             send_telegram_message(chat_id, "📲 እባክዎን ከታች ያለውን አዝራር በመጫን የክፍያ ስክሪንሹት ወይም የትራንዛክሽን ቁጥር ያስገቡ፦", inline_key)
+
+        elif text in ["📞 ድጋፍ", "ድጋፍ", "📞 ድጋፍ / አድሚን"]:
+            s_phone = sett['support_phone'] if (sett and sett['support_phone']) else "+251 911 00 00 00"
+            support_msg = (
+                f"📞 <b>የ KOKETI ዕቁብ ድጋፍ እና አድሚን ማነጋገርያ</b>\n━━━━━━━━━━━━━━━━━━━\n"
+                f"ለማንኛውም ጥያቄ፣ አስተያየት ወይም የክፍያ ድጋፍ በሚከተለው የስልክ ቁጥር ይደውሉልን፦\n\n"
+                f"📱 <b>ስልክ ቁጥር:</b> <code>{s_phone}</code>\n\n"
+                f"⏱️ <b>የስራ ሰዓት:</b> ከሰኞ - እሁድ (ከጠዋቱ 2:00 - ማታ 2:00)"
+            )
+            send_telegram_message(chat_id, support_msg, p_key)
 
         elif text == "⚙️ የአድሚን መቆጣጠሪያ ፓናል" and is_admin:
             inline_key = {"inline_keyboard": [[{"text": "⚙️ ወደ አድሚን ፓናል ግባ", "web_app": {"url": f"{WEB_APP_URL}/admin"}}]]}
