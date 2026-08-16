@@ -2,6 +2,8 @@ import os
 import sqlite3
 import json
 import requests
+import re
+import random
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
@@ -15,6 +17,10 @@ DB_PATH = os.environ.get("DB_PATH", "koketi_equb.db")
 
 UPLOAD_FOLDER = os.path.join('.', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Failed Login Attempts tracking
+failed_attempts = {}
+current_otp = None
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -53,21 +59,28 @@ def init_db():
             current_week INTEGER DEFAULT 1,
             winner_name TEXT DEFAULT '-',
             max_members INTEGER DEFAULT 100,
-            registration_status TEXT DEFAULT 'OPEN'
+            registration_status TEXT DEFAULT 'OPEN',
+            admin_password TEXT DEFAULT 'Koketi@2026'
         )
     ''')
-    cursor.execute('INSERT OR IGNORE INTO equb_settings (id, total_target_amount, max_members, registration_status) VALUES (1, 2000000, 100, "OPEN")')
-    
-    # Check if receipt_path column exists in existing DB
-    cursor.execute("PRAGMA table_info(equb_members)")
-    columns = [col[1] for col in cursor.fetchall()]
-    if 'receipt_path' not in columns:
-        cursor.execute("ALTER TABLE equb_members ADD COLUMN receipt_path TEXT DEFAULT '-'")
-        
+    cursor.execute('INSERT OR IGNORE INTO equb_settings (id, total_target_amount, max_members, registration_status, admin_password) VALUES (1, 2000000, 100, "OPEN", "Koketi@2026")')
     conn.commit()
     conn.close()
 
 init_db()
+
+def is_strong_password(password):
+    if len(password) < 8:
+        return False
+    if not re.search(r"[A-Z]", password):
+        return False
+    if not re.search(r"[a-z]", password):
+        return False
+    if not re.search(r"[0-9]", password):
+        return False
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+        return False
+    return True
 
 def send_telegram_message(chat_id, text, reply_markup=None):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
@@ -107,18 +120,91 @@ def admin_page():
 def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
+# --- ADMIN AUTHENTICATION & SECURITY APIs ---
+
+@app.route('/api/admin/login', methods=['POST'])
+def admin_login():
+    global failed_attempts
+    data = request.json or {}
+    password = data.get('password', '')
+    ip = request.remote_addr
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT admin_password FROM equb_settings WHERE id=1")
+    db_pass = cursor.fetchone()[0]
+    conn.close()
+
+    if password == db_pass:
+        failed_attempts[ip] = 0
+        return jsonify({"status": "success", "message": "Login Successful"})
+    else:
+        failed_attempts[ip] = failed_attempts.get(ip, 0) + 1
+        attempts = failed_attempts[ip]
+
+        # 3 ጊዜ እና ከዚያ በላይ ከተሳሳተ ለአድሚኑ የደህንነት ማስጠንቀቂያ መላክ
+        if attempts >= 3:
+            alert_msg = (
+                f"🚨 <b>SECURITY ALERT (የደህንነት ማስጠንቀቂያ)!</b>\n\n"
+                f"⚠️ አንድ ያልታወቀ ሰው የአድሚን ፓናሉን ለመክፈት አጠራጣሪ ሙከራ እያደረገ ነው!\n"
+                f"🌐 <b>IP Address:</b> <code>{ip}</code>\n"
+                f"❌ <b>የተሳሳተ ሙከራ ብዛት:</b> {attempts} ጊዜ"
+            )
+            send_telegram_message(ADMIN_ID, alert_msg)
+
+        return jsonify({"status": "error", "message": "የተሳሳተ የይለፍ ቃል ነው!", "attempts": attempts}), 401
+
+@app.route('/api/admin/request_otp', methods=['POST'])
+def request_otp():
+    global current_otp
+    current_otp = str(random.randint(100000, 999999))
+    
+    msg = (
+        f"🔐 <b>የአድሚን የይለፍ ቃል መቀየሪያ OTP Code!</b>\n\n"
+        f"የይለፍ ቃልዎን ለመቀየር የሚጠቀሙበት ጊዜያዊ ኮድ፦ <code>{current_otp}</code>\n\n"
+        f"⚠️ <i>ይህንን ኮድ ለማንም ሰው አያጋሩ!</i>"
+    )
+    send_telegram_message(ADMIN_ID, msg)
+    return jsonify({"status": "success", "message": "OTP ወደ አድሚኑ ቴሌግራም ተልኳል!"})
+
+@app.route('/api/admin/reset_password', methods=['POST'])
+def reset_password():
+    global current_otp
+    data = request.json or {}
+    otp = data.get('otp')
+    new_password = data.get('new_password')
+
+    if not current_otp or otp != current_otp:
+        return jsonify({"status": "error", "message": "የተሳሳተ OTP ኮድ ነው!"}), 400
+
+    if not is_strong_password(new_password):
+        return jsonify({
+            "status": "error", 
+            "message": "ፓስወርዱ ጥንካሬ አልጠበቀም! ቢያንስ 8 አሃዝ፣ ትልቅና ትንሽ ፊደላት፣ ቁጥር እና ልዩ ምልክቶች (@,#,$) ማካተት አለበት።"
+        }), 400
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE equb_settings SET admin_password=? WHERE id=1", (new_password,))
+    conn.commit()
+    conn.close()
+
+    current_otp = None
+    send_telegram_message(ADMIN_ID, "✅ <b>የአድሚን ይለፍ ቃልዎ በስኬት ተቀይሯል!</b>")
+    return jsonify({"status": "success", "message": "የይለፍ ቃልዎ በስኬት ተቀይሯል!"})
+
+# --- USER & TELEGRAM BOT WEBHOOK ---
+
 @app.route('/webhook', methods=['POST'])
 def webhook():
     update = request.json
     if not update:
         return jsonify({"status": "ok"}), 200
 
-    # 1. Handle Inline Button Clicks (Approval & Payment Approvals)
     if "callback_query" in update:
         cb = update["callback_query"]
         cb_id = cb["id"]
         cb_data = cb.get("data", "")
-        from_id = cb["from"]["id"]
 
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
@@ -131,7 +217,6 @@ def webhook():
             conn.commit()
             if row and row[0]:
                 send_telegram_message(row[0], f"🎉 <b>እንኳን ደስ አለዎት {row[1]}!</b>\n\nየዕቁብ ምዝገባዎ በአድሚን ጸድቋል። የመዝገብ ቁጥርዎ: <b>{row[2]}</b>")
-            
             requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery", json={"callback_query_id": cb_id, "text": "አባሉ በስኬት ጸድቋል!"})
 
         elif cb_data.startswith("reject_m_"):
@@ -142,7 +227,6 @@ def webhook():
             conn.commit()
             if row and row[0]:
                 send_telegram_message(row[0], f"🚫 <b>ሰላም {row[1]}፣</b>\n\nየዕቁብ ምዝገባዎ ውድቅ ተደርጓል።")
-            
             requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery", json={"callback_query_id": cb_id, "text": "ምዝገባው ውድቅ ተደርጓል!"})
 
         elif cb_data.startswith("approve_pay_"):
@@ -153,13 +237,11 @@ def webhook():
             conn.commit()
             if row and row[0]:
                 send_telegram_message(row[0], f"✅ <b>ሰላም {row[1]}፣</b>\n\nየላኩት የሳምንቱ ክፍያ ስክሪንሹት ተረጋግጦ ጸድቋል! አመሰግናለሁ።")
-            
             requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery", json={"callback_query_id": cb_id, "text": "የሳምንቱ ክፍያ ተጸድቋል!"})
 
         conn.close()
         return jsonify({"status": "ok"}), 200
 
-    # 2. Handle Text Commands (/start)
     if "message" in update:
         chat_id = str(update["message"]["chat"]["id"])
         text = update["message"].get("text", "")
@@ -175,57 +257,34 @@ def webhook():
             sett = cursor.fetchone()
             target_amount, draw_num, draw_date, curr_week, winner = sett if sett else (2000000, 'አልወጣም', '-', 1, '-')
 
+            # አንድ ሰው የፈለገውን ያህል አካውንት ሊኖረው ስለሚችል ሁሉንም አካውንቶቹን ማሳየት
             cursor.execute("SELECT ref_no, first_name, cycle_amount, share_count, paid_amount, status, weekly_paid_status FROM equb_members WHERE telegram_id=?", (chat_id,))
-            member = cursor.fetchone()
+            members = cursor.fetchall()
             conn.close()
 
-            if member:
-                ref_no, name, cycle_amt, shares, paid_amt, status, w_paid = member
-                total_cycle = cycle_amt * shares
-                remaining = max(0, total_cycle - paid_amt)
-                paid_str = "✅ ተከፍሏል" if w_paid == 1 else "❌ አልተከፈለም"
-
-                if status == 'Pending':
-                    msg = (
-                        f"👋 <b>ሰላም {name}!</b>\n\n"
-                        f"📌 <b>የመዝገብ ቁጥር:</b> {ref_no}\n"
-                        f"⏳ <b>የምዝገባ ሁኔታ:</b> <code>በአድሚን በመረጋገጥ ላይ (Pending)</code>\n\n"
-                        f"<i>መረጃዎ እና ክፍያዎ ተረጋግጦ ሲጸድቅ የዕቁብ ደብተርዎ ይከፈታል።</i>"
-                    )
-                elif status == 'Blocked':
-                    msg = f"⛔ <b>ሰላም {name}፣</b>\n\nየአባልነት አካውንትዎ በአድሚን <b>ታግዷል (Blocked)</b>።"
-                elif status == 'Cancelled':
-                    msg = f"🚫 <b>ሰላም {name}፣</b>\n\nየዕቁብ ምዝገባዎ <b>ተሰርዟል (Cancelled)</b>።"
-                else:
-                    msg = (
-                        f"📖 <b>የ KOKETI ዕቁብ ደብተር (Passbook)</b>\n"
-                        f"━━━━━━━━━━━━━━━━━━━\n"
+            if members:
+                msg = f"📖 <b>የ KOKETI ዕቁብ ደብተር (የተመዘገቡት ብዛት፦ {len(members)})</b>\n━━━━━━━━━━━━━━━━━━━\n"
+                for m in members:
+                    ref_no, name, cycle_amt, shares, paid_amt, status, w_paid = m
+                    total_cycle = cycle_amt * shares
+                    paid_str = "✅ ተከፍሏል" if w_paid == 1 else "❌ አልተከፈለም"
+                    msg += (
                         f"👤 <b>አባል:</b> {name} ({ref_no})\n"
-                        f"👥 <b>ጠቅላላ አባላት:</b> {approved_count}\n"
-                        f"📅 <b>የአሁኑ ሳምንት:</b> ሳምንት {curr_week}\n"
-                        f"📌 <b>የዚህ ሳምንት ክፍያዎት:</b> {paid_str}\n"
-                        f"━━━━━━━━━━━━━━━━━━━\n"
-                        f"🎲 <b>የሳምንቱ የወጣው ዕጣ ቁጥር:</b> {draw_num}\n"
-                        f"🏆 <b>የዕጣው ባለቤት:</b> {winner}\n"
-                        f"📅 <b>የዕጣ ቀን:</b> {draw_date}\n"
-                        f"━━━━━━━━━━━━━━━━━━━\n"
-                        f"💰 <b>የዕቁብ ዙር (በአንድ ዕጣ):</b> {cycle_amt:,.2f} ብር\n"
-                        f"🔢 <b>የዕጣ ብዛት:</b> {shares} ዕጣ\n"
-                        f"💵 <b>ጠቅላላ ክፍያዎ:</b> {total_cycle:,.2f} ብር\n"
-                        f"✅ <b>እስካሁን የከፈሉት:</b> {paid_amt:,.2f} ብር\n"
-                        f"🔻 <b>ቀሪ እዳዎ:</b> {remaining:,.2f} ብር"
+                        f"📌 <b>ሁኔታ:</b> {status} | <b>የሳምንቱ ክፍያ:</b> {paid_str}\n"
+                        f"💰 <b>ክፍያ:</b> {paid_amt:,.2f} / {total_cycle:,.2f} ብር\n"
+                        f"-----------------------------------\n"
                     )
             else:
                 msg = (
                     "👋 <b>እንኳን ወደ KOKETI KURT & LOUNGE የዕቁብ አገልግሎት በሰላም መጡ!</b>\n\n"
                     f"👥 <b>ተመዝጋቢ አባላት:</b> {approved_count}\n"
                     f"📅 <b>የአሁኑ ሳምንት:</b> ሳምንት {curr_week}\n\n"
-                    "እባክዎን ከታች ያለውን ቁልፍ በመጫን ይመዝገቡ።"
+                    "እባክዎን ከታች ያለውን ቁልፍ በመጫን ይመዝገቡ። (በአንድ የቴሌግራም አካውንት ከአንድ በላይ መመዝገብ ይችላሉ)"
                 )
 
             reply_markup = {
                 "inline_keyboard": [[
-                    {"text": "📝 የዕቁብ ገጽ / መመዝገቢያ", "web_app": {"url": WEB_APP_URL}}
+                    {"text": "📝 የዕቁብ ገጽ / አዲስ ምዝገባ", "web_app": {"url": WEB_APP_URL}}
                 ]]
             }
 
@@ -238,15 +297,17 @@ def webhook():
 
     return jsonify({"status": "ok"}), 200
 
-# ----------------- APIs FOR USER & ADMIN -----------------
+# ----------------- PUBLIC & MEMBER APIs -----------------
 
 @app.route('/api/member_info/<telegram_id>', methods=['GET'])
 def get_member_info(telegram_id):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM equb_members WHERE telegram_id=?", (telegram_id,))
-    member = cursor.fetchone()
+    
+    # የዚህ የቴሌግራም አካውንት አባላት በሙሉ
+    cursor.execute("SELECT * FROM equb_members WHERE telegram_id=? ORDER BY id DESC", (telegram_id,))
+    members = [dict(r) for r in cursor.fetchall()]
     
     cursor.execute("SELECT registration_status, max_members FROM equb_settings WHERE id=1")
     settings = dict(cursor.fetchone())
@@ -257,13 +318,12 @@ def get_member_info(telegram_id):
     conn.close()
     
     return jsonify({
-        "member": dict(member) if member else None,
+        "members": members,
         "registration_status": settings.get("registration_status", "OPEN"),
         "max_members": settings.get("max_members", 100),
         "total_approved": total_approved
     })
 
-# አዲስ አባል መመዝገቢያ API
 @app.route('/api/register', methods=['POST'])
 def register_equb():
     try:
@@ -307,7 +367,6 @@ def register_equb():
         conn.commit()
         conn.close()
 
-        # ለአድሚን በቴሌግራም መላኪያ መልእክትና Inline Buttons
         msg_admin = (
             f"🔔 <b>አዲስ አባል ተመዝግቧል!</b>\n\n"
             f"🆔 <b>Ref No:</b> {ref_no}\n"
@@ -338,19 +397,18 @@ def register_equb():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# ሳምንታዊ ክፍያ ስክሪንሹት መላኪያ API
 @app.route('/api/upload_weekly_receipt', methods=['POST'])
 def upload_weekly_receipt():
-    telegram_id = request.form.get('telegram_id')
+    member_id = request.form.get('member_id')
     receipt_file = request.files.get('receipt')
 
-    if not receipt_file or not telegram_id:
+    if not receipt_file or not member_id:
         return jsonify({"status": "error", "message": "ምንም ፋይል ወይም አባል አልተመረጠም"}), 400
 
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM equb_members WHERE telegram_id=?", (telegram_id,))
+    cursor.execute("SELECT * FROM equb_members WHERE id=?", (member_id,))
     member = cursor.fetchone()
     conn.close()
 
@@ -378,21 +436,46 @@ def upload_weekly_receipt():
     send_telegram_photo(ADMIN_ID, filepath, caption, inline_markup)
     return jsonify({"status": "success", "message": "ስክሪንሹቱ ለአድሚኑ በስኬት ተልኳል!"}), 200
 
-# ----------------- ADMIN MANAGEMENT APIs -----------------
+# ----------------- ADMIN DASHBOARD APIs -----------------
 
 @app.route('/api/admin/members', methods=['GET'])
 def get_admin_members():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
+    
     cursor.execute("SELECT * FROM equb_members ORDER BY id DESC")
     members = [dict(row) for row in cursor.fetchall()]
     
+    # Stats Calculation
+    cursor.execute("SELECT COUNT(*) as total FROM equb_members")
+    total_reg = cursor.fetchone()['total']
+
+    cursor.execute("SELECT COUNT(*) as approved FROM equb_members WHERE status='Approved'")
+    total_approved = cursor.fetchone()['approved']
+
+    cursor.execute("SELECT COUNT(*) as pending FROM equb_members WHERE status='Pending'")
+    total_pending = cursor.fetchone()['pending']
+
+    cursor.execute("SELECT COUNT(*) as blocked FROM equb_members WHERE status='Blocked'")
+    total_blocked = cursor.fetchone()['blocked']
+
+    cursor.execute("SELECT SUM(paid_amount) as total_paid FROM equb_members")
+    total_paid_sum = cursor.fetchone()['total_paid'] or 0
+
     cursor.execute("SELECT * FROM equb_settings WHERE id=1")
     settings = dict(cursor.fetchone())
     conn.close()
     
-    return jsonify({"members": members, "settings": settings})
+    stats = {
+        "total_registered": total_reg,
+        "total_approved": total_approved,
+        "total_pending": total_pending,
+        "total_blocked": total_blocked,
+        "total_paid_sum": total_paid_sum
+    }
+
+    return jsonify({"members": members, "settings": settings, "stats": stats})
 
 @app.route('/api/admin/change_status/<int:member_id>', methods=['POST'])
 def change_status(member_id):
@@ -549,7 +632,7 @@ def update_draw():
             f"👏 ለባለዕጣው እንኳን ደስ አለዎት!"
         )
 
-        cursor.execute("SELECT telegram_id FROM equb_members WHERE status='Approved' AND telegram_id != ''")
+        cursor.execute("SELECT DISTINCT telegram_id FROM equb_members WHERE status='Approved' AND telegram_id != ''")
         users = cursor.fetchall()
         for u in users:
             send_telegram_message(u[0], announcement)
