@@ -11,7 +11,12 @@
     .card h3 { margin-top: 0; color: #f1f5f9; border-bottom: 1px solid #334155; padding-bottom: 8px; font-size: 16px; }
     .btn { background-color: #22c55e; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 8px; }
     .btn-broadcast { background-color: #e11d48; margin-top: 10px; }
-    .btn-approve { background-color: #3b82f6; padding: 5px 10px; width: auto; font-size: 12px; }
+    .btn-unpaid { background-color: #f59e0b; color: #000; margin-top: 10px; }
+    .btn-approve { background-color: #3b82f6; padding: 4px 8px; font-size: 11px; border-radius: 4px; border: none; color: white; cursor: pointer; }
+    .btn-msg { background-color: #8b5cf6; padding: 4px 8px; font-size: 11px; border-radius: 4px; border: none; color: white; cursor: pointer; margin-top: 4px; }
+    .btn-paid { background-color: #22c55e; padding: 4px 8px; font-size: 11px; border-radius: 4px; border: none; color: white; cursor: pointer; }
+    .btn-unpaid-status { background-color: #ef4444; padding: 4px 8px; font-size: 11px; border-radius: 4px; border: none; color: white; cursor: pointer; }
+    
     input, select { padding: 9px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; width: 100%; box-sizing: border-box; margin-bottom: 10px; font-size: 13px; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
@@ -24,11 +29,11 @@
 </head>
 <body>
 
-<h2>⚙️ KOKETI የአድሚን ዳሽቦርድ</h2>
+<h2>⚙️ KOKETI የአድሚን መቆጣጠሪያ ፓናል</h2>
 
 <!-- 1. የሳምንት እና ዕጣ መቆጣጠሪያ -->
 <div class="card">
-    <h3>🎲 የዕጣ እና ማስታወቂያ መቆጣጠሪያ (Draw Control)</h3>
+    <h3>🎲 የዕጣ፣ የሳምንትና የማስታወቂያ መቆጣጠሪያ</h3>
     <div class="grid">
         <div>
             <label>ስንተኛው ሳምንት</label>
@@ -50,12 +55,13 @@
         </div>
     </div>
     <button class="btn" onclick="saveDraw(false)">💾 መረጃውን ብቻ መዝግብ</button>
-    <button class="btn btn-broadcast" onclick="saveDraw(true)">📢 መዝግብና ለአባላት በሙሉ አብስር (Broadcast)</button>
+    <button class="btn btn-unpaid" onclick="notifyUnpaidMembers()">⚠️ ላልከፈሉት ብቻ የክፍያ ማሳሰቢያ ላክ</button>
+    <button class="btn btn-broadcast" onclick="saveDraw(true)">📢 መዝግብና የከፈሉትን/ያልከፈሉትን ለአባላት በሙሉ አብስር</button>
 </div>
 
-<!-- 2. የአባላት ሙሉ ዝርዝርና የዋስትና መረጃ -->
+<!-- 2. የአባላት ሙሉ ዝርዝር፣ የሳምንት ክፍያና የዋስትና መረጃ -->
 <div class="card">
-    <h3>👥 የአባላት ሙሉ መረጃና ዋስትና (ለአድሚን ብቻ)</h3>
+    <h3>👥 የአባላት መረጃ፣ የክፍያ ሁኔታና ዋስትና</h3>
     <div style="overflow-x:auto;">
         <table>
             <thead>
@@ -63,9 +69,9 @@
                     <th>Ref No</th>
                     <th>ስም & ስልክ</th>
                     <th>ዕጣ</th>
-                    <th>ዙር (ብር)</th>
-                    <th>የዋስትና መረጃ (ቼክ/ዋስ/ንብረት)</th>
-                    <th>ሁኔታ</th>
+                    <th>የሳምንት ክፍያ</th>
+                    <th>የዋስትና መረጃ (ለአድሚን ብቻ)</th>
+                    <th>ምዝገባ</th>
                     <th>እርምጃ</th>
                 </tr>
             </thead>
@@ -91,11 +97,17 @@ async function loadData() {
 
     data.members.forEach(m => {
         const row = document.createElement('tr');
+        const isPaid = m.weekly_paid_status === 1;
+
         row.innerHTML = `
             <td><b>${m.ref_no}</b></td>
             <td>${m.first_name} ${m.father_name}<br><small>${m.phone_number}</small></td>
             <td><b>${m.share_count || 1}</b> ዕጣ</td>
-            <td>${m.cycle_amount}</td>
+            <td>
+                <button class="${isPaid ? 'btn-paid' : 'btn-unpaid-status'}" onclick="togglePayment(${m.id}, ${isPaid ? 0 : 1})">
+                    ${isPaid ? '✅ ከፍሏል' : '❌ አልከፈለም'}
+                </button>
+            </td>
             <td class="guarantor-info">
                 <b>ቼክ:</b> ${m.member_cheque || '-'}<br>
                 <b>ዋስ:</b> ${m.guarantor_name || '-'}<br>
@@ -104,7 +116,8 @@ async function loadData() {
             </td>
             <td><span class="${m.status === 'Pending' ? 'badge-pending' : 'badge-approved'}">${m.status}</span></td>
             <td>
-                ${m.status === 'Pending' ? `<button class="btn btn-approve" onclick="approveMember(${m.id})">Approve</button>` : '✓ የጸደቀ'}
+                ${m.status === 'Pending' ? `<button class="btn-approve" onclick="approveMember(${m.id})">Approve</button>` : '✓ የጸደቀ'}
+                <button class="btn-msg" onclick="sendDirectMessage('${m.telegram_id}', '${m.first_name}')">📩 መልእክት</button>
             </td>
         `;
         tbody.appendChild(row);
@@ -118,13 +131,46 @@ async function approveMember(id) {
     }
 }
 
+async function togglePayment(id, newStatus) {
+    await fetch('/api/admin/toggle_payment/' + id, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weekly_paid_status: newStatus })
+    });
+    loadData();
+}
+
+async function sendDirectMessage(telegramId, name) {
+    if(!telegramId) {
+        alert('ይህ አባል የቴሌግራም አይዲ ስለሌለው መልእክት መላክ አይቻልም!');
+        return;
+    }
+    const msg = prompt(`ለ ${name} የሚላከውን መልእክት ያስገቡ፦`);
+    if(msg) {
+        const res = await fetch('/api/admin/send_direct_msg', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ telegram_id: telegramId, message: msg })
+        });
+        if(res.ok) alert('መልእክቱ ተልኳል!');
+    }
+}
+
+async function notifyUnpaidMembers() {
+    if(confirm('የዚህን ሳምንት ክፍያ ላልፈጸሙ አባላት በሙሉ ማሳሰቢያ እንዲላክ ይፈልጋሉ?')) {
+        const res = await fetch('/api/admin/notify_unpaid', { method: 'POST' });
+        const data = await res.json();
+        alert(`ለ ${data.notified_count} ያልከፈሉ አባላት ማሳሰቢያ ተልኳል!`);
+    }
+}
+
 async function saveDraw(shouldBroadcast) {
     const num = document.getElementById('draw_number').value;
     const date = document.getElementById('draw_date').value;
     const week = document.getElementById('current_week').value;
     const winner = document.getElementById('winner_name').value;
 
-    if (shouldBroadcast && !confirm('የወጣውን ዕጣ መረጃ ለሁሉም አባላት በቴሌግራም መላክ ይፈልጋሉ?')) {
+    if (shouldBroadcast && !confirm('የወጣውን ዕጣ እና የከፈሉ/ያልከፈሉ አባላትን መረጃ ለሁሉም አባላት በቴሌግራም መላክ ይፈልጋሉ?')) {
         return;
     }
 
