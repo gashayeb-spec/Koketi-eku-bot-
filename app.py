@@ -12,6 +12,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
 app = Flask(__name__, static_folder='.')
+app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(24))
 CORS(app)
 
 # Config - Environment Variables
@@ -284,6 +285,20 @@ def admin_page():
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
+
+@app.route('/api/admin/check_auth', methods=['GET'])
+def check_auth():
+    token = request.headers.get("X-Admin-Token")
+    if token and token in active_admin_tokens:
+        return jsonify({"authenticated": True})
+    return jsonify({"authenticated": False})
+
+@app.route('/api/admin/logout', methods=['POST'])
+def admin_logout():
+    token = request.headers.get("X-Admin-Token")
+    if token in active_admin_tokens:
+        active_admin_tokens.remove(token)
+    return jsonify({"status": "success"})
 
 @app.route('/api/admin/login', methods=['POST'])
 def admin_login():
