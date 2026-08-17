@@ -105,12 +105,12 @@
 
         /* CLICK TO COPY ACCOUNT BOX */
         .account-display-box {
-            display: none;
             background: rgba(245, 158, 11, 0.1);
             border: 1px dashed var(--gold);
             border-radius: 8px;
             padding: 10px 12px;
             margin-top: 8px;
+            margin-bottom: 8px;
             cursor: pointer;
             transition: 0.2s;
         }
@@ -213,6 +213,31 @@
                             <label id="t_lbl_select_acc">የሚከፍሉበትን አካውንት ይምረጡ</label>
                             <select id="weeklyMemberSelect" required></select>
                         </div>
+
+                        <!-- Dashboard Bank Option & Copy Box -->
+                        <div class="input-group">
+                            <label id="t_lbl_weekly_bank">የክፍያ መቀበያ ባንክ / አካውንት</label>
+                            <select id="weeklyPaymentMethod" onchange="displayWeeklyAccountDetails()">
+                                <option value="Telebirr">ቴሌብር - 0916039015</option>
+                                <option value="CBE_Birr">ሲቢኢ ብር - 0916039015</option>
+                                <option value="CBE">የኢትዮጵያ ንግድ ባንክ - 1000070780201</option>
+                                <option value="BOA">አቢሲንያ ባንክ - 54071628</option>
+                                <option value="Dashen">ዳሸን ባንክ - 5121355332011</option>
+                                <option value="Nib">ንብ ባንክ - 7000106022734</option>
+                                <option value="Cash">ካሽ (በእጅ) / Cash</option>
+                            </select>
+
+                            <div id="weeklyAccountDisplayBox" class="account-display-box" onclick="copyWeeklyAccount()">
+                                <div class="acc-details">
+                                    <div>
+                                        <span id="weeklyAccBankName" style="font-size: 0.8rem; display: block; color: var(--text-muted);">የባንክ ቁጥር (ለመቅዳት ይጫኑ)፦</span>
+                                        <span id="weeklyAccNumberText" class="acc-number">0916039015</span>
+                                    </div>
+                                    <span class="copy-tag" id="t_copy_btn_weekly">Copy</span>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="input-group">
                             <label id="t_lbl_weekly_receipt">የሳምንታዊ ክፍያ ደረሰኝ (ስክሪንሹት)</label>
                             <div class="file-upload" onclick="document.getElementById('weeklyFile').click()">
@@ -276,24 +301,24 @@
                         <label><span id="t_lbl_total_pay">ጠቅላላ የሳምንት ክፍያዎት፦</span> <b id="totalCalc" style="color: var(--gold);">5,000 ብር</b></label>
                     </div>
 
-                    <!-- Updated Payment Method Section -->
+                    <!-- Payment Method with Direct Account Display -->
                     <div class="input-group">
                         <label id="t_lbl_pay_method">የክፍያ መንገድ</label>
                         <select id="paymentMethod" onchange="displayAccountDetails()">
-                            <option value="Telebirr" id="opt_telebirr">ቴሌብር (Telebirr)</option>
-                            <option value="CBE_Birr" id="opt_cbe_birr">ሲቢኢ ብር (CBE Birr)</option>
-                            <option value="CBE" id="opt_cbe">የኢትዮጵያ ንግድ ባንክ (CBE)</option>
-                            <option value="BOA" id="opt_boa">አቢሲንያ ባንክ (BOA)</option>
-                            <option value="Dashen" id="opt_dashen">ዳሸን ባንክ (Dashen Bank)</option>
-                            <option value="Nib" id="opt_nib">ንብ ባንክ (Nib Bank)</option>
-                            <option value="Cash" id="opt_cash">ካሽ (በእጅ) / Cash</option>
+                            <option value="Telebirr">ቴሌብር - 0916039015</option>
+                            <option value="CBE_Birr">ሲቢኢ ብር - 0916039015</option>
+                            <option value="CBE">የኢትዮጵያ ንግድ ባንክ - 1000070780201</option>
+                            <option value="BOA">አቢሲንያ ባንክ - 54071628</option>
+                            <option value="Dashen">ዳሸን ባንክ - 5121355332011</option>
+                            <option value="Nib">ንብ ባንክ - 7000106022734</option>
+                            <option value="Cash">ካሽ (በእጅ) / Cash</option>
                         </select>
 
-                        <!-- Account Copy Card -->
+                        <!-- Registration Account Copy Card -->
                         <div id="accountDisplayBox" class="account-display-box" onclick="copyCurrentAccount()">
                             <div class="acc-details">
                                 <div>
-                                    <span id="accBankName" style="font-size: 0.8rem; display: block; color: var(--text-muted);">የባንክ ቁጥር፡</span>
+                                    <span id="accBankName" style="font-size: 0.8rem; display: block; color: var(--text-muted);">የባንክ ቁጥር (ለመቅዳት ይጫኑ)፦</span>
                                     <span id="accNumberText" class="acc-number">0916039015</span>
                                 </div>
                                 <span class="copy-tag" id="t_copy_btn">Copy</span>
@@ -349,6 +374,7 @@
                 supportLbl: "ድጋፍ",
                 drawNum: "የወጣው ዕጣ", drawWinner: "አሸናፊ", drawDate: "ቀን",
                 selectAcc: "የሚከፍሉበትን አካውንት ይምረጡ",
+                weeklyBankLbl: "የክፍያ መቀበያ ባንክ / አካውንት",
                 weeklyReceipt: "የሳምንታዊ ክፍያ ደረሰኝ (ስክሪንሹት)",
                 selectReceipt: "ደረሰኝ ይምረጡ",
                 btnSubmitPay: '<i class="fas fa-paper-plane"></i> ክፍያውን አረጋግጥ',
@@ -361,7 +387,6 @@
                 totalPay: "ጠቅላላ የሳምንት ክፍያዎት፦",
                 currency: "ብር",
                 payMethod: "የክፍያ መንገድ",
-                telebirr: "ቴሌብር (Telebirr)", cbeBirr: "ሲቢኢ ብር (CBE Birr)", cbe: "የኢትዮጵያ ንግድ ባንክ (CBE)", boa: "አቢሲንያ ባንክ (BOA)", dashen: "ዳሸን ባንክ (Dashen)", nib: "ንብ ባንክ (Nib Bank)", cash: "ካሽ (በእጅ) / Cash",
                 optCustom: "ሌላ መጠን (በእጅ ፃፍ / Custom)",
                 copyBtn: "Copy", copiedTxt: "ተቀድቷል!",
                 regReceipt: "የመጀመሪያ ክፍያ ደረሰኝ (ስክሪንሹት)",
@@ -381,6 +406,7 @@
                 supportLbl: "Support",
                 drawNum: "Drawn No.", drawWinner: "Winner", drawDate: "Date",
                 selectAcc: "Select Account To Pay",
+                weeklyBankLbl: "Payment Bank / Account",
                 weeklyReceipt: "Weekly Payment Receipt (Screenshot)",
                 selectReceipt: "Select Receipt",
                 btnSubmitPay: '<i class="fas fa-paper-plane"></i> Confirm Payment',
@@ -393,7 +419,6 @@
                 totalPay: "Total Weekly Payment:",
                 currency: "ETB",
                 payMethod: "Payment Method",
-                telebirr: "Telebirr", cbeBirr: "CBE Birr", cbe: "Commercial Bank of Ethiopia (CBE)", boa: "Bank of Abyssinia (BOA)", dashen: "Dashen Bank", nib: "Nib Bank", cash: "Cash",
                 optCustom: "Custom Amount",
                 copyBtn: "Copy", copiedTxt: "Copied!",
                 regReceipt: "First Payment Receipt (Screenshot)",
@@ -420,6 +445,7 @@
             document.getElementById('t_draw_winner').innerText = t.drawWinner;
             document.getElementById('t_draw_date').innerText = t.drawDate;
             document.getElementById('t_lbl_select_acc').innerText = t.selectAcc;
+            document.getElementById('t_lbl_weekly_bank').innerText = t.weeklyBankLbl;
             document.getElementById('t_lbl_weekly_receipt').innerText = t.weeklyReceipt;
             document.getElementById('weeklyFileName').innerText = t.selectReceipt;
             document.getElementById('t_btn_submit_pay').innerHTML = t.btnSubmitPay;
@@ -436,13 +462,6 @@
             document.getElementById('t_lbl_total_pay').innerText = t.totalPay;
             document.getElementById('t_lbl_pay_method').innerText = t.payMethod;
 
-            document.getElementById('opt_telebirr').innerText = t.telebirr;
-            document.getElementById('opt_cbe_birr').innerText = t.cbeBirr;
-            document.getElementById('opt_cbe').innerText = t.cbe;
-            document.getElementById('opt_boa').innerText = t.boa;
-            document.getElementById('opt_dashen').innerText = t.dashen;
-            document.getElementById('opt_nib').innerText = t.nib;
-            document.getElementById('opt_cash').innerText = t.cash;
             document.getElementById('opt_custom').innerText = t.optCustom;
 
             document.getElementById('t_lbl_reg_receipt').innerText = t.regReceipt;
@@ -453,6 +472,7 @@
 
             calculateTotal();
             displayAccountDetails();
+            displayWeeklyAccountDetails();
             loadUserData();
         }
 
@@ -496,6 +516,7 @@
             document.getElementById('totalCalc').innerText = (count * amount).toLocaleString() + " " + t.currency;
         }
 
+        /* Registration Account Details */
         function displayAccountDetails() {
             const method = document.getElementById('paymentMethod').value;
             const box = document.getElementById('accountDisplayBox');
@@ -518,6 +539,36 @@
             if (data && data.raw) {
                 navigator.clipboard.writeText(data.raw).then(() => {
                     const btn = document.getElementById('t_copy_btn');
+                    const original = btn.innerText;
+                    btn.innerText = translations[currentLang].copiedTxt;
+                    setTimeout(() => { btn.innerText = original; }, 2000);
+                });
+            }
+        }
+
+        /* Weekly Passbook Dashboard Account Details */
+        function displayWeeklyAccountDetails() {
+            const method = document.getElementById('weeklyPaymentMethod').value;
+            const box = document.getElementById('weeklyAccountDisplayBox');
+            const accName = document.getElementById('weeklyAccBankName');
+            const accNum = document.getElementById('weeklyAccNumberText');
+
+            if (bankAccounts[method]) {
+                const data = bankAccounts[method];
+                box.style.display = 'block';
+                accName.innerText = `${data.name} አካውንት ቁጥር (ለመቅዳት ይጫኑ)፦`;
+                accNum.innerText = data.number;
+            } else {
+                box.style.display = 'none';
+            }
+        }
+
+        function copyWeeklyAccount() {
+            const method = document.getElementById('weeklyPaymentMethod').value;
+            const data = bankAccounts[method];
+            if (data && data.raw) {
+                navigator.clipboard.writeText(data.raw).then(() => {
+                    const btn = document.getElementById('t_copy_btn_weekly');
                     const original = btn.innerText;
                     btn.innerText = translations[currentLang].copiedTxt;
                     setTimeout(() => { btn.innerText = original; }, 2000);
@@ -642,6 +693,7 @@
             e.preventDefault();
             const formData = new FormData();
             formData.append('member_id', document.getElementById('weeklyMemberSelect').value);
+            formData.append('payment_method', document.getElementById('weeklyPaymentMethod').value);
             formData.append('receipt', document.getElementById('weeklyFile').files[0]);
 
             try {
@@ -654,8 +706,9 @@
             } catch(err) { alert(currentLang === 'am' ? "መላክ አልተቻለም!" : "Upload failed!"); }
         });
 
-        // Initialize Account Box Display on page load
+        // Initialize Account Box Displays
         displayAccountDetails();
+        displayWeeklyAccountDetails();
         loadUserData();
     </script>
 </body>
