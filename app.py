@@ -6,6 +6,8 @@ import re
 import random
 import time
 import secrets
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
@@ -21,6 +23,7 @@ WEB_APP_URL = os.environ.get("WEB_APP_URL", "https://koketi-eku-bot-1.onrender.c
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.environ.get("DB_PATH", os.path.join(BASE_DIR, "koketi_equb.db"))
+DATABASE_URL = os.environ.get("DATABASE_URL")
 UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", os.path.join(BASE_DIR, "uploads"))
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -28,103 +31,178 @@ failed_attempts = {}
 current_otp = None
 active_admin_tokens = set()
 
+class DictCursorWrapper:
+    def __init__(self, cursor):
+        self.cursor = cursor
+    def execute(self, query, params=None):
+        query = query.replace('?', '%s') if DATABASE_URL else query
+        if params:
+            self.cursor.execute(query, params)
+        else:
+            self.cursor.execute(query)
+        return self
+    def fetchone(self):
+        res = self.cursor.fetchone()
+        return dict(res) if res else None
+    def fetchall(self):
+        res = self.cursor.fetchall()
+        return [dict(r) for r in res] if res else []
+    @property
+    def lastrowid(self):
+        if hasattr(self.cursor, 'lastrowid') and self.cursor.lastrowid:
+            return self.cursor.lastrowid
+        try:
+            self.cursor.execute("SELECT LASTVAL()")
+            return self.cursor.fetchone()['lastval']
+        except Exception:
+            return None
+
+class DBConnWrapper:
+    def __init__(self, conn):
+        self.conn = conn
+    def cursor(self):
+        return DictCursorWrapper(self.conn.cursor())
+    def commit(self):
+        self.conn.commit()
+    def close(self):
+        self.conn.close()
+
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    if DATABASE_URL:
+        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+        return DBConnWrapper(conn)
+    else:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return DBConnWrapper(conn)
 
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # 1. Equb Members Table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS equb_members (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            ref_no TEXT UNIQUE,
-            telegram_id TEXT,
-            first_name TEXT,
-            father_name TEXT,
-            grand_name TEXT,
-            phone_number TEXT,
-            gps_location TEXT,
-            region TEXT,
-            payment_method TEXT,
-            cycle_amount REAL,
-            share_count INTEGER DEFAULT 1,
-            paid_amount REAL DEFAULT 0,
-            status TEXT DEFAULT 'Pending',
-            weekly_paid_status INTEGER DEFAULT 0,
-            member_cheque TEXT DEFAULT '-',
-            guarantor_name TEXT DEFAULT '-',
-            guarantor_cheque TEXT DEFAULT '-',
-            collateral_item TEXT DEFAULT '-',
-            receipt_path TEXT DEFAULT '-',
-            receipt_url TEXT DEFAULT NULL,
-            receipt_ref TEXT DEFAULT NULL,
-            weekly_receipt_url TEXT DEFAULT NULL,
-            weekly_receipt_ref TEXT DEFAULT NULL,
-            transaction_id TEXT DEFAULT NULL,
-            referred_by TEXT DEFAULT '-',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Auto-migration
-    cursor.execute("PRAGMA table_info(equb_members)")
-    cols = [col[1] for col in cursor.fetchall()]
-    new_cols = {
-        'receipt_url': 'TEXT DEFAULT NULL',
-        'receipt_ref': 'TEXT DEFAULT NULL',
-        'weekly_receipt_url': 'TEXT DEFAULT NULL',
-        'weekly_receipt_ref': 'TEXT DEFAULT NULL',
-        'transaction_id': 'TEXT DEFAULT NULL'
-    }
-    for col_name, col_type in new_cols.items():
-        if col_name not in cols:
-            cursor.execute(f"ALTER TABLE equb_members ADD COLUMN {col_name} {col_type}")
-
-    # 2. Equb Settings Table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS equb_settings (
-            id INTEGER PRIMARY KEY DEFAULT 1,
-            total_target_amount REAL DEFAULT 2000000,
-            latest_draw_number TEXT DEFAULT 'አልወጣም',
-            latest_draw_date TEXT DEFAULT '-',
-            current_week INTEGER DEFAULT 1,
-            winner_name TEXT DEFAULT '-',
-            max_members INTEGER DEFAULT 100,
-            registration_status TEXT DEFAULT 'OPEN',
-            bot_status TEXT DEFAULT 'ACTIVE',
-            admin_password TEXT DEFAULT 'Koketi@2026',
-            support_phone TEXT DEFAULT '0916039015'
-        )
-    ''')
-    
-    cursor.execute("PRAGMA table_info(equb_settings)")
-    s_cols = [col[1] for col in cursor.fetchall()]
-    if 'bot_status' not in s_cols:
-        cursor.execute("ALTER TABLE equb_settings ADD COLUMN bot_status TEXT DEFAULT 'ACTIVE'")
-    if 'support_phone' not in s_cols:
-        cursor.execute("ALTER TABLE equb_settings ADD COLUMN support_phone TEXT DEFAULT '0916039015'")
-
-    cursor.execute('INSERT OR IGNORE INTO equb_settings (id, total_target_amount, max_members, registration_status, bot_status, admin_password, support_phone) VALUES (1, 2000000, 100, "OPEN", "ACTIVE", "Koketi@2026", "0916039015")')
-    
-    # 3. Payment Transactions Ledger Table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS payment_transactions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            member_id INTEGER,
-            ref_no TEXT,
-            week_number INTEGER,
-            amount REAL,
-            receipt_url TEXT,
-            receipt_ref TEXT,
-            status TEXT DEFAULT 'Pending',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(member_id) REFERENCES equb_members(id)
-        )
-    ''')
+    if DATABASE_URL:
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS equb_members (
+                id SERIAL PRIMARY KEY,
+                ref_no TEXT UNIQUE,
+                telegram_id TEXT,
+                first_name TEXT,
+                father_name TEXT,
+                grand_name TEXT,
+                phone_number TEXT,
+                gps_location TEXT,
+                region TEXT,
+                payment_method TEXT,
+                cycle_amount REAL,
+                share_count INTEGER DEFAULT 1,
+                paid_amount REAL DEFAULT 0,
+                status TEXT DEFAULT 'Pending',
+                weekly_paid_status INTEGER DEFAULT 0,
+                member_cheque TEXT DEFAULT '-',
+                guarantor_name TEXT DEFAULT '-',
+                guarantor_cheque TEXT DEFAULT '-',
+                collateral_item TEXT DEFAULT '-',
+                receipt_path TEXT DEFAULT '-',
+                receipt_url TEXT DEFAULT NULL,
+                receipt_ref TEXT DEFAULT NULL,
+                weekly_receipt_url TEXT DEFAULT NULL,
+                weekly_receipt_ref TEXT DEFAULT NULL,
+                transaction_id TEXT DEFAULT NULL,
+                referred_by TEXT DEFAULT '-',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS equb_settings (
+                id INTEGER PRIMARY KEY DEFAULT 1,
+                total_target_amount REAL DEFAULT 2000000,
+                latest_draw_number TEXT DEFAULT 'አልወጣም',
+                latest_draw_date TEXT DEFAULT '-',
+                current_week INTEGER DEFAULT 1,
+                winner_name TEXT DEFAULT '-',
+                max_members INTEGER DEFAULT 100,
+                registration_status TEXT DEFAULT 'OPEN',
+                bot_status TEXT DEFAULT 'ACTIVE',
+                admin_password TEXT DEFAULT 'Koketi@2026',
+                support_phone TEXT DEFAULT '0916039015'
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS payment_transactions (
+                id SERIAL PRIMARY KEY,
+                member_id INTEGER,
+                ref_no TEXT,
+                week_number INTEGER,
+                amount REAL,
+                receipt_url TEXT,
+                receipt_ref TEXT,
+                status TEXT DEFAULT 'Pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor.execute('INSERT INTO equb_settings (id, total_target_amount, max_members, registration_status, bot_status, admin_password, support_phone) VALUES (1, 2000000, 100, \'OPEN\', \'ACTIVE\', \'Koketi@2026\', \'0916039015\') ON CONFLICT (id) DO NOTHING')
+    else:
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS equb_members (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ref_no TEXT UNIQUE,
+                telegram_id TEXT,
+                first_name TEXT,
+                father_name TEXT,
+                grand_name TEXT,
+                phone_number TEXT,
+                gps_location TEXT,
+                region TEXT,
+                payment_method TEXT,
+                cycle_amount REAL,
+                share_count INTEGER DEFAULT 1,
+                paid_amount REAL DEFAULT 0,
+                status TEXT DEFAULT 'Pending',
+                weekly_paid_status INTEGER DEFAULT 0,
+                member_cheque TEXT DEFAULT '-',
+                guarantor_name TEXT DEFAULT '-',
+                guarantor_cheque TEXT DEFAULT '-',
+                collateral_item TEXT DEFAULT '-',
+                receipt_path TEXT DEFAULT '-',
+                receipt_url TEXT DEFAULT NULL,
+                receipt_ref TEXT DEFAULT NULL,
+                weekly_receipt_url TEXT DEFAULT NULL,
+                weekly_receipt_ref TEXT DEFAULT NULL,
+                transaction_id TEXT DEFAULT NULL,
+                referred_by TEXT DEFAULT '-',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS equb_settings (
+                id INTEGER PRIMARY KEY DEFAULT 1,
+                total_target_amount REAL DEFAULT 2000000,
+                latest_draw_number TEXT DEFAULT 'አልወጣም',
+                latest_draw_date TEXT DEFAULT '-',
+                current_week INTEGER DEFAULT 1,
+                winner_name TEXT DEFAULT '-',
+                max_members INTEGER DEFAULT 100,
+                registration_status TEXT DEFAULT 'OPEN',
+                bot_status TEXT DEFAULT 'ACTIVE',
+                admin_password TEXT DEFAULT 'Koketi@2026',
+                support_phone TEXT DEFAULT '0916039015'
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS payment_transactions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                member_id INTEGER,
+                ref_no TEXT,
+                week_number INTEGER,
+                amount REAL,
+                receipt_url TEXT,
+                receipt_ref TEXT,
+                status TEXT DEFAULT 'Pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(member_id) REFERENCES equb_members(id)
+            )
+        ''')
+        cursor.execute('INSERT OR IGNORE INTO equb_settings (id, total_target_amount, max_members, registration_status, bot_status, admin_password, support_phone) VALUES (1, 2000000, 100, "OPEN", "ACTIVE", "Koketi@2026", "0916039015")')
 
     conn.commit()
     conn.close()
@@ -147,16 +225,14 @@ def is_strong_password(password):
         return False
     return True
 
-# የተስተካከለ Admin Authentication Helper
 def require_admin(f):
     def wrapper(*args, **kwargs):
         token = request.headers.get("X-Admin-Token")
-        # Token ካለ እና ትክክል ከሆነ ወይም Active Tokens ባዶ ከሆኑ (ለማንበብ እንዳያግደው) ያሳልፋል
         if token and token in active_admin_tokens:
             return f(*args, **kwargs)
         elif not active_admin_tokens:
             return f(*args, **kwargs)
-        return f(*args, **kwargs) # የአድሚን ፓናሉ ይዘት ሳይስተጓጎል እንዲነበብ
+        return f(*args, **kwargs)
     wrapper.__name__ = f.__name__
     return wrapper
 
@@ -219,7 +295,8 @@ def admin_login():
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT admin_password FROM equb_settings WHERE id=1")
-    db_pass = cursor.fetchone()[0]
+    row = cursor.fetchone()
+    db_pass = row['admin_password'] if row else 'Koketi@2026'
     conn.close()
 
     if password == db_pass:
@@ -397,9 +474,9 @@ def get_member_info(telegram_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM equb_members WHERE telegram_id=? ORDER BY id DESC", (telegram_id,))
-    members = [dict(r) for r in cursor.fetchall()]
+    members = cursor.fetchall()
     cursor.execute("SELECT registration_status, max_members, current_week, latest_draw_number, latest_draw_date, winner_name, bot_status, support_phone FROM equb_settings WHERE id=1")
-    settings = dict(cursor.fetchone())
+    settings = cursor.fetchone()
     cursor.execute("SELECT COUNT(*) as count FROM equb_members WHERE status='Approved'")
     total_approved = cursor.fetchone()['count']
     conn.close()
@@ -468,9 +545,9 @@ def register_equb():
                 send_telegram_message(ADMIN_ID, msg_admin, inline_markup)
 
         return jsonify({"status": "success", "message": "ምዝገባው ተጠናቅቋል!"}), 200
-    except sqlite3.IntegrityError:
-        return jsonify({"status": "error", "message": "ይህ መዝገብ ቁጥር አስቀድሞ አለ!"}), 400
     except Exception as e:
+        if "unique" in str(e).lower() or "integrity" in str(e).lower():
+            return jsonify({"status": "error", "message": "ይህ መዝገብ ቁጥር አስቀድሞ አለ!"}), 400
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/upload_weekly_receipt', methods=['POST'])
@@ -569,7 +646,7 @@ def get_admin_members():
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM equb_members ORDER BY id DESC")
-    members = [dict(row) for row in cursor.fetchall()]
+    members = cursor.fetchall()
     
     cursor.execute("SELECT COUNT(*) as total FROM equb_members")
     total_reg = cursor.fetchone()['total']
@@ -583,7 +660,7 @@ def get_admin_members():
     total_paid_sum = cursor.fetchone()['total_paid'] or 0
 
     cursor.execute("SELECT * FROM equb_settings WHERE id=1")
-    settings = dict(cursor.fetchone())
+    settings = cursor.fetchone()
     conn.close()
 
     stats = {
