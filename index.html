@@ -103,6 +103,39 @@
         }
         .input-group input:focus { border-color: var(--gold); }
 
+        /* CLICK TO COPY ACCOUNT BOX */
+        .account-display-box {
+            display: none;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px dashed var(--gold);
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-top: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .account-display-box:hover {
+            background: rgba(245, 158, 11, 0.2);
+        }
+        .acc-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .acc-number {
+            font-size: 0.95rem;
+            font-weight: bold;
+            color: var(--gold);
+        }
+        .copy-tag {
+            font-size: 0.75rem;
+            background: var(--gold);
+            color: #0f172a;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
         .btn {
             width: 100%; padding: 12px; background: var(--gold); color: #0f172a; border: none;
             border-radius: 8px; font-weight: bold; font-size: 0.95rem; cursor: pointer; transition: 0.3s;
@@ -227,24 +260,47 @@
                         </div>
                         <div style="flex: 2;">
                             <label id="t_lbl_cycle">የአንዱ ዕጣ ሳምንታዊ ክፍያ</label>
-                            <select id="cycleAmount" onchange="calculateTotal()">
+                            <select id="cycleAmountSelect" onchange="handleCycleAmountChange()">
                                 <option value="5000">5,000 ETB</option>
                                 <option value="10000">10,000 ETB</option>
                                 <option value="20000">20,000 ETB</option>
+                                <option value="30000">30,000 ETB</option>
+                                <option value="50000">50,000 ETB</option>
+                                <option value="100000">100,000 ETB</option>
+                                <option value="custom" id="opt_custom">ሌላ መጠን (በእጅ ፃፍ / Custom)</option>
                             </select>
+                            <input type="number" id="customCycleInput" placeholder="የብር መጠን ያስገቡ" style="display: none; margin-top: 5px;" min="100" onchange="calculateTotal()" oninput="calculateTotal()">
                         </div>
                     </div>
                     <div class="input-group">
                         <label><span id="t_lbl_total_pay">ጠቅላላ የሳምንት ክፍያዎት፦</span> <b id="totalCalc" style="color: var(--gold);">5,000 ብር</b></label>
                     </div>
+
+                    <!-- Updated Payment Method Section -->
                     <div class="input-group">
                         <label id="t_lbl_pay_method">የክፍያ መንገድ</label>
-                        <select id="paymentMethod">
-                            <option value="CBE" id="opt_cbe">የኢትዮጵያ ንግድ ባንክ (CBE)</option>
+                        <select id="paymentMethod" onchange="displayAccountDetails()">
                             <option value="Telebirr" id="opt_telebirr">ቴሌብር (Telebirr)</option>
+                            <option value="CBE_Birr" id="opt_cbe_birr">ሲቢኢ ብር (CBE Birr)</option>
+                            <option value="CBE" id="opt_cbe">የኢትዮጵያ ንግድ ባንክ (CBE)</option>
                             <option value="BOA" id="opt_boa">አቢሲንያ ባንክ (BOA)</option>
+                            <option value="Dashen" id="opt_dashen">ዳሸን ባንክ (Dashen Bank)</option>
+                            <option value="Nib" id="opt_nib">ንብ ባንክ (Nib Bank)</option>
+                            <option value="Cash" id="opt_cash">ካሽ (በእጅ) / Cash</option>
                         </select>
+
+                        <!-- Account Copy Card -->
+                        <div id="accountDisplayBox" class="account-display-box" onclick="copyCurrentAccount()">
+                            <div class="acc-details">
+                                <div>
+                                    <span id="accBankName" style="font-size: 0.8rem; display: block; color: var(--text-muted);">የባንክ ቁጥር፡</span>
+                                    <span id="accNumberText" class="acc-number">0916039015</span>
+                                </div>
+                                <span class="copy-tag" id="t_copy_btn">Copy</span>
+                            </div>
+                        </div>
                     </div>
+
                     <div class="input-group">
                         <label id="t_lbl_reg_receipt">የመጀመሪያ ክፍያ ደረሰኝ (ስክሪንሹት)</label>
                         <div class="file-upload" onclick="document.getElementById('regReceipt').click()">
@@ -271,6 +327,17 @@
         const telegramId = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id.toString() : "";
         document.getElementById('telegramIdInput').value = telegramId;
 
+        // Account Numbers Data
+        const bankAccounts = {
+            'Telebirr': { name: 'ቴሌብር', number: '0916039015', raw: '0916039015' },
+            'CBE_Birr': { name: 'ሲቢኢ ብር', number: '0916039015', raw: '0916039015' },
+            'CBE': { name: 'የኢትዮጵያ ንግድ ባንክ', number: '1000070780201', raw: '1000070780201' },
+            'BOA': { name: 'አቢሲንያ ባንክ', number: '54071628', raw: '54071628' },
+            'Dashen': { name: 'ዳሸን ባንክ', number: '5121355332011', raw: '5121355332011' },
+            'Nib': { name: 'ንብ ባንክ', number: '7000106022734', raw: '7000106022734' },
+            'Cash': { name: 'ካሽ (በእጅ)', number: 'በእጅ የሚከፈል', raw: '' }
+        };
+
         let currentLang = 'am';
         const translations = {
             am: {
@@ -294,7 +361,9 @@
                 totalPay: "ጠቅላላ የሳምንት ክፍያዎት፦",
                 currency: "ብር",
                 payMethod: "የክፍያ መንገድ",
-                cbe: "የኢትዮጵያ ንግድ ባንክ (CBE)", telebirr: "ቴሌብር (Telebirr)", boa: "አቢሲንያ ባንክ (BOA)",
+                telebirr: "ቴሌብር (Telebirr)", cbeBirr: "ሲቢኢ ብር (CBE Birr)", cbe: "የኢትዮጵያ ንግድ ባንክ (CBE)", boa: "አቢሲንያ ባንክ (BOA)", dashen: "ዳሸን ባንክ (Dashen)", nib: "ንብ ባንክ (Nib Bank)", cash: "ካሽ (በእጅ) / Cash",
+                optCustom: "ሌላ መጠን (በእጅ ፃፍ / Custom)",
+                copyBtn: "Copy", copiedTxt: "ተቀድቷል!",
                 regReceipt: "የመጀመሪያ ክፍያ ደረሰኝ (ስክሪንሹት)",
                 attachReceipt: "ደረሰኝ ያያይዙ",
                 referral: "የጋበዘዎት ሰው መለያ (Optional)", pRef: "የሪፈራል ኮድ",
@@ -324,7 +393,9 @@
                 totalPay: "Total Weekly Payment:",
                 currency: "ETB",
                 payMethod: "Payment Method",
-                cbe: "Commercial Bank of Ethiopia (CBE)", telebirr: "Telebirr", boa: "Bank of Abyssinia (BOA)",
+                telebirr: "Telebirr", cbeBirr: "CBE Birr", cbe: "Commercial Bank of Ethiopia (CBE)", boa: "Bank of Abyssinia (BOA)", dashen: "Dashen Bank", nib: "Nib Bank", cash: "Cash",
+                optCustom: "Custom Amount",
+                copyBtn: "Copy", copiedTxt: "Copied!",
                 regReceipt: "First Payment Receipt (Screenshot)",
                 attachReceipt: "Attach Receipt",
                 referral: "Referred By (Optional)", pRef: "Referral Code",
@@ -364,9 +435,16 @@
             document.getElementById('t_lbl_cycle').innerText = t.cycle;
             document.getElementById('t_lbl_total_pay').innerText = t.totalPay;
             document.getElementById('t_lbl_pay_method').innerText = t.payMethod;
-            document.getElementById('opt_cbe').innerText = t.cbe;
+
             document.getElementById('opt_telebirr').innerText = t.telebirr;
+            document.getElementById('opt_cbe_birr').innerText = t.cbeBirr;
+            document.getElementById('opt_cbe').innerText = t.cbe;
             document.getElementById('opt_boa').innerText = t.boa;
+            document.getElementById('opt_dashen').innerText = t.dashen;
+            document.getElementById('opt_nib').innerText = t.nib;
+            document.getElementById('opt_cash').innerText = t.cash;
+            document.getElementById('opt_custom').innerText = t.optCustom;
+
             document.getElementById('t_lbl_reg_receipt').innerText = t.regReceipt;
             document.getElementById('regFileName').innerText = t.attachReceipt;
             document.getElementById('t_lbl_referral').innerText = t.referral;
@@ -374,6 +452,7 @@
             document.getElementById('regBtn').innerText = t.btnReg;
 
             calculateTotal();
+            displayAccountDetails();
             loadUserData();
         }
 
@@ -389,11 +468,61 @@
             return 'KQT-' + Math.floor(100000 + Math.random() * 900000);
         }
 
+        function handleCycleAmountChange() {
+            const select = document.getElementById('cycleAmountSelect');
+            const customInput = document.getElementById('customCycleInput');
+            if (select.value === 'custom') {
+                customInput.style.display = 'block';
+                customInput.required = true;
+            } else {
+                customInput.style.display = 'none';
+                customInput.required = false;
+            }
+            calculateTotal();
+        }
+
         function calculateTotal() {
             const count = parseInt(document.getElementById('shareCount').value) || 1;
-            const amount = parseFloat(document.getElementById('cycleAmount').value) || 5000;
+            const selectVal = document.getElementById('cycleAmountSelect').value;
+            let amount = 5000;
+
+            if (selectVal === 'custom') {
+                amount = parseFloat(document.getElementById('customCycleInput').value) || 0;
+            } else {
+                amount = parseFloat(selectVal) || 5000;
+            }
+
             const t = translations[currentLang];
             document.getElementById('totalCalc').innerText = (count * amount).toLocaleString() + " " + t.currency;
+        }
+
+        function displayAccountDetails() {
+            const method = document.getElementById('paymentMethod').value;
+            const box = document.getElementById('accountDisplayBox');
+            const accName = document.getElementById('accBankName');
+            const accNum = document.getElementById('accNumberText');
+
+            if (bankAccounts[method]) {
+                const data = bankAccounts[method];
+                box.style.display = 'block';
+                accName.innerText = `${data.name} አካውንት ቁጥር (ለመቅዳት ይጫኑ)፦`;
+                accNum.innerText = data.number;
+            } else {
+                box.style.display = 'none';
+            }
+        }
+
+        function copyCurrentAccount() {
+            const method = document.getElementById('paymentMethod').value;
+            const data = bankAccounts[method];
+            if (data && data.raw) {
+                navigator.clipboard.writeText(data.raw).then(() => {
+                    const btn = document.getElementById('t_copy_btn');
+                    const original = btn.innerText;
+                    btn.innerText = translations[currentLang].copiedTxt;
+                    setTimeout(() => { btn.innerText = original; }, 2000);
+                });
+            }
         }
 
         function updateFileName(input, targetId) {
@@ -474,6 +603,9 @@
             btn.disabled = true;
             btn.innerText = currentLang === 'am' ? "እየተላከ ነው..." : "Submitting...";
 
+            const selectVal = document.getElementById('cycleAmountSelect').value;
+            const finalCycleAmount = selectVal === 'custom' ? document.getElementById('customCycleInput').value : selectVal;
+
             const formData = new FormData();
             formData.append('ref_no', generateRefNo());
             formData.append('telegram_id', telegramId);
@@ -483,7 +615,7 @@
             formData.append('phone_number', document.getElementById('phoneNumber').value);
             formData.append('region_select', document.getElementById('regionSelect').value);
             formData.append('share_count', document.getElementById('shareCount').value);
-            formData.append('cycle_amount', document.getElementById('cycleAmount').value);
+            formData.append('cycle_amount', finalCycleAmount);
             formData.append('payment_method', document.getElementById('paymentMethod').value);
             formData.append('referred_by', document.getElementById('referredBy').value || '-');
             formData.append('receipt', document.getElementById('regReceipt').files[0]);
@@ -522,6 +654,8 @@
             } catch(err) { alert(currentLang === 'am' ? "መላክ አልተቻለም!" : "Upload failed!"); }
         });
 
+        // Initialize Account Box Display on page load
+        displayAccountDetails();
         loadUserData();
     </script>
 </body>
